@@ -1,4 +1,4 @@
-class CoinbaseExchangeAuth(AuthBase):
+class CoinbaseExchangeAuth():
     def __init__(self):
         self.api_key = API_KEY
         self.secret_key = API_SECRET
@@ -20,4 +20,8 @@ class CoinbaseExchangeAuth(AuthBase):
         })
         return request
 
+class CoinbaseConsts:
+    KEY_PRODUCTID = 'id'
+    KEY_COINNAME = 'base_currency'
+    KEY_QUOTECURRENCY = 'quote_currency'
 
