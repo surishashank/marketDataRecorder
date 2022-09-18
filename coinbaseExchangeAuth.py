@@ -1,3 +1,15 @@
+# import requests
+#
+# url = "https://api.exchange.coinbase.com/products/ROSE-USDT/candles?granularity=86400"
+#
+# headers = {"Accept": "application/json"}
+#
+# response = requests.get(url, headers=headers)
+#
+# for line in response.json():
+#     print(line)
+
+
 class CoinbaseExchangeAuth():
     def __init__(self):
         self.api_key = API_KEY
@@ -24,4 +36,5 @@ class CoinbaseConsts:
     KEY_PRODUCTID = 'id'
     KEY_COINNAME = 'base_currency'
     KEY_QUOTECURRENCY = 'quote_currency'
+    KEY_BASECURRENCY = 'base_currency'
 

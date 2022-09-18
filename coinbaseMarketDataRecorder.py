@@ -1,17 +1,13 @@
+import math
 from datetime import datetime, timedelta, date
-from coinbaseExchangeAuth import CoinbaseExchangeAuth
 from coinbaseExchangeAuth import CoinbaseConsts as const
 
 import pandas as pd
 import requests
-import json
 import time
 import os
 
-# API_URL = 'https://api.pro.coinbase.com/'
-API_URL = 'https://api.exchange.coinbase.com/'
 
-interestingQuoteCurrencies = ['USD', 'USDC', 'USDT']
 # TODO: Make the following command line inputs
 #  granularity (getAllHistoricalPrices); saveTradingViewCopy(getAllUsdProducts)
 
@@ -19,94 +15,123 @@ interestingQuoteCurrencies = ['USD', 'USDC', 'USDT']
 # Data output in descending order i.e. oldest date first
 # TODO: Add new data to daily data everyday and if date range data is needed it should be taken from the existing
 #  daily/ 6hr/ 1hr etc data. This partial data should be stored in a temp folder
-class CoinbaseAPI:
-    def __init__(self, client=None):
-        self.client = client if client else CoinbaseExchangeAuth()
+class coinbaseMDRecorder:
+    def __init__(self, api_url, header, maxCandlesPerAPIRequest, exchangeName, interestingBaseCurrencies,
+                 interestingQuoteCurrencies, outputDirectory, timeframes, writeNewFiles):
+        self.api_url = api_url
+        self.header = header
+        self.maxCandlesPerAPIRequest = maxCandlesPerAPIRequest
+        self.exchangeName = exchangeName
 
-    # Default granularity = daily candles, 60*60*24 = 86400
+        self.interestingBaseCurrencies = interestingBaseCurrencies
+        self.interestingQuoteCurrencies = interestingQuoteCurrencies
+        self.outputDirectory = outputDirectory
+        self.timeframes = timeframes
+        # self.granularity = self.getGranularityFromTimeframeStr(timeframe)
+        self.writeNewFiles = writeNewFiles
+
+    def getFilenameForProductID(self, productId, timeframe):
+        fileName = os.path.join(self.outputDirectory,
+                                '{}_{}_{}.csv'.format(self.exchangeName, productId, timeframe))
+        return fileName
+
+    def writeHistoricalDataForProductToFile(self, productId, timeframe):
+        filename = self.getFilenameForProductID(productId, timeframe)
+        minRequestStartTime = 0
+        if not self.writeNewFiles and os.path.isfile(filename):
+            minRequestStartTime = self.getLatestTimestampFromFile(filename)
+        print('minRequestStartTime:', minRequestStartTime)
+        self.getAllHistoricalPrices(productId, minRequestStartTime, filename,
+                                    self.getGranularityFromTimeframeStr(timeframe))
+
+    def getLatestTimestampFromFile(self, filename):
+        lastLine = None
+        numLines = 0
+        with open(filename) as f:
+            for line in f:
+                numLines += 1
+                continue
+            if numLines <= 1:
+                return 0
+        latestTimestamp = self.getDateTimestamp(lastLine)
+        return latestTimestamp
+
     # Can only request 300 candles per request
-    @staticmethod
-    def getAllHistoricalPrices(productId, granularity=86400):
-        rows = []
-        start = 300
-        end = 0
-        params = {'start': (datetime.utcnow() - timedelta(start)).isoformat(),
-                  'end': (datetime.utcnow() - timedelta(end)).isoformat(),
-                  'granularity': granularity}
-        r = requests.get(API_URL + 'products/{0}/candles'.format(productId), params=params)
+    def getAllHistoricalPrices(self, productId, minReqStartTime, filename, granularity):
+        candles = []
+        numBlankRequests = 0
+        reqEndTime = int(granularity * int(time.time() / granularity))
+        while reqEndTime >= minReqStartTime:
+            reqStartTime = reqEndTime - granularity * (self.maxCandlesPerAPIRequest - 1)
+            reqStartTime = max(minReqStartTime, reqStartTime)
 
-        while len(r.json()) > 1:
-            params = {'start': (datetime.utcnow() - timedelta(start)).isoformat(),
-                      'end': (datetime.utcnow() - timedelta(end)).isoformat(),
-                      'granularity': granularity}
-            r = requests.get(API_URL + 'products/{0}/candles'.format(productId), params=params)
-            for line in r.json():
-                row = [datetime.utcfromtimestamp(line[0]).strftime('%Y-%m-%d')] + line[1:]
-                rows.append(row)
-            time.sleep(.5)
-            end = start
-            start += 300
-        CoinbaseAPI.writeCsv(rows[::-1], productId, granularity)
+            params = {
+                'granularity': granularity,
+                'start': str(reqStartTime),
+                'end': str(reqEndTime)
+            }
+            requestStr = self.api_url + 'products/{0}/candles'.format(productId)
+            r = requests.get(requestStr, params=params)
+            print('Request sent start:', datetime.fromtimestamp(reqStartTime), 'end:',
+                  datetime.fromtimestamp(reqEndTime), 'URL:', r.url)
 
-    # start = utc start time, e.g. datetime.date(2017, 12, 17)
-    # end = utc end time, e.g. datetime.date(2017, 12, 17)
-    # Default granularity = daily candles, 60*60*24 = 86400
-    # Can only request 300 candles per request
-    # TODO: api not returning values for startdate on first run but does on subsequent one..wtf.
-    @staticmethod
-    def getHistoricalPricesForDateRange(productId, start, end, granularity=86400):
-        rows = []
-        i = start
-        j = i + timedelta(300)
-        firstRun = True
+            if not r.ok:
+                print("ERROR! Request returned with status code:", r.status_code,
+                      'and text', r.text, ". Exiting...")
+                quit()
 
-        while (j - i).days >= 300:
-            # Adding timedelta(1), since API returns data for starDate-endDate inclusive, i.e. to avoid dates overlap
-            # from previous iteration.
-            i = start if firstRun else j + timedelta(1)
-            j = i + timedelta(300) if i + timedelta(300) < end else end
-            firstRun = False
-            params = {'start': i.isoformat(),
-                      'end': j.isoformat(),
-                      'granularity': granularity}
-            r = requests.get(API_URL + 'products/{0}/candles'.format(productId), params=params)
-            # Response gets end data first, so have to traverse response in reverse
-            for line in r.json()[::-1]:
-                row = [datetime.utcfromtimestamp(line[0]).strftime('%Y-%m-%d')] + line[1:]
-                rows.append(row)
-            time.sleep(.5)
+            reqEndTime = reqStartTime - granularity
+            r_json = r.json()
+            if len(r_json) == 0:
+                numBlankRequests += 1
+                print('Received blank response. NumBlankRequests:', numBlankRequests)
+                if numBlankRequests >= 3:
+                    break
+                continue
 
-        CoinbaseAPI.writeCsv(rows, productId, 0, start, end)
+            candles += r_json
+            numBlankRequests = 0
+            time.sleep(.12)
+            ###############################################
+            earliestTimestamp = self.getDateTimestamp(','.join(str(x) for x in r_json[-1]))
+            latestTimestamp = self.getDateTimestamp(','.join(str(x) for x in r_json[0]))
+            print('NumCandlesReceived:', len(r_json), 'EarliestTimestamp:', earliestTimestamp, 'or',
+                  datetime.fromtimestamp(earliestTimestamp), 'LatestTimestamp:', latestTimestamp, 'or',
+                  datetime.fromtimestamp(latestTimestamp), '\n')
+            ###############################################
 
-    @staticmethod
-    def writeCsv(data, productId, granularity, start=None, end=None):
-        header = ['date', 'low', 'high', 'open', 'close', 'volume']
-        timeframe = CoinbaseAPI.getStrFromIntGranularity(granularity)
-        candles = pd.DataFrame(data, columns=header)
-        currDirName = os.path.dirname(__file__)
-        pair = productId.split("-")[1]
+        self.writeToCsv(candles[::-1], filename)
 
-        dateRange = ""
-        # Date range data goes into temp folder
-        if start:
-            dateRange = "_{}_{}".format(start.isoformat(), end.isoformat())
-            timeframe = "temp"
-        dirToWrite = os.path.join(currDirName, 'temp/{0}/{1}/'.format(timeframe, pair))
-        fileName = dirToWrite + "{}{}.csv".format(productId, dateRange)
-        if not os.path.isdir(dirToWrite):
-            os.makedirs(dirToWrite)
-        candles.to_csv(fileName, index=False)
+    def getDateTimestamp(self, row):
+        if not row:
+            return 0
+        # print('Row:', row)
+        elements_arr = [x.strip() for x in row.split(',')]
+        df = pd.DataFrame([elements_arr], columns=self.header)
+        return int(df.at[0, 'date'])
 
-    @staticmethod
-    def getAllHistoricalPricesForAllUsdCoins():
-        for product in CoinbaseAPI.getAllUsdProducts():
-            print("Writing Data for {}".format(product))
-            CoinbaseAPI.getAllHistoricalPrices(product)
-            time.sleep(.5)
+    def writeToCsv(self, data, filename):
+        candles = pd.DataFrame(data, columns=self.header).drop_duplicates('date')
 
-    @staticmethod
-    def getAllUsdProducts(saveTradingViewCopy=False):
-        r = requests.get(API_URL + 'products', timeout=3)
+        if not self.writeNewFiles and os.path.isfile(filename):
+            old_candles = pd.read_csv(filename)
+            candles = pd.merge(candles, old_candles, how='outer').drop_duplicates('date')
+            candles.sort_values('date', inplace=True)
+
+        # candles['date'] = pd.to_datetime(candles['date'], unit='s')
+        candles.to_csv(filename, index=False)
+
+    def recordHistoricalPricesForAllInterestingCoins(self):
+        interestingProductIDs = self.getAllInterestingProductIDs()
+        for product in interestingProductIDs:
+            for timeframe in self.timeframes:
+                print("Writing Data for product:{} on timeframe:{}".format(product, timeframe))
+                self.writeHistoricalDataForProductToFile(product, timeframe)
+                print('Successfully recorded data for {} on {}'.format(product, timeframe))
+                # self.getAllHistoricalPrices(product)
+
+    def getAllInterestingProductIDs(self):
+        r = requests.get(self.api_url + 'products', timeout=3)
         if not r.ok:
             print("ERROR! Request returned with status code:", r.status_code, ". Exiting...")
             quit()
@@ -114,39 +139,44 @@ class CoinbaseAPI:
         products = []
         response_list = r.json()
         for response in response_list:
-            # print(response)
-            if response[const.KEY_QUOTECURRENCY] in interestingQuoteCurrencies:
+            quoteCurrency = response[const.KEY_QUOTECURRENCY]
+            symbol = response[const.KEY_BASECURRENCY]
+            if self.isInterestingQuoteCurrency(quoteCurrency) and self.isInterestingBaseCurrency(symbol):
                 products.append(response[const.KEY_PRODUCTID])
 
-        if saveTradingViewCopy:
-            file = open('coinbase-usd.txt', 'w')
-            for product in products:
-                file.write("COINBASE:{}\n".format(product.replace("-", "")))
-            file.close()
         print("Total number of eligible products: {}".format(len(products)))
         return products
 
-    @staticmethod
-    def getUnlistedCoins():
-        params = {'start': date.today(),
-                  'end': date.today(),
-                  'granularity': 86400}
-        for product in CoinbaseAPI.getAllUsdProducts():
-            try:
-                requests.get(API_URL + 'products/{0}/candles'.format(product), params=params)
-            except:
-                print(product)
+    def isInterestingQuoteCurrency(self, quoteCurrency):
+        if not self.interestingQuoteCurrencies or len(self.interestingQuoteCurrencies) == 0:
+            return True
+        if quoteCurrency in self.interestingQuoteCurrencies:
+            return True
+        return False
+
+    def isInterestingBaseCurrency(self, baseCurrency):
+        if not self.interestingBaseCurrencies or len(self.interestingBaseCurrencies) == 0:
+            return True
+        if baseCurrency in self.interestingBaseCurrencies:
+            return True
+        return False
 
     @staticmethod
-    def getStrFromIntGranularity(granularity):
-        if granularity == 86400:
-            return "daily"
-        elif granularity == 21600:
-            return "6_hr"
-        elif granularity == 3600:
-            return "1_hr"
-        else:
-            return "temp"
-
-
-CoinbaseAPI.getAllHistoricalPricesForAllUsdCoins()
+    def getGranularityFromTimeframeStr(timeframe):
+        match timeframe:
+            case '1m':
+                return 60
+            case '5m':
+                return 300
+            case '15m':
+                return 900
+            case '1h':
+                return 3600
+            case '6h':
+                return 21600
+            case '1d':
+                return 86400
+            case _:
+                print('ERROR! Unsupported timeframe:', timeframe,
+                      'passed to getGranularityFromTimeframeStr. Exiting...')
+                quit()
