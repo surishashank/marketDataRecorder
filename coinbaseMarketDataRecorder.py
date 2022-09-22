@@ -38,11 +38,16 @@ class coinbaseMDRecorder:
     def writeHistoricalDataForProductToFile(self, productId, timeframe):
         filename = self.getFilenameForProductID(productId, timeframe)
         minRequestStartTime = 0
-        if not self.writeNewFiles and os.path.isfile(filename):
+        if os.path.isfile(filename) and not self.writeNewFiles:
             minRequestStartTime = self.getLatestTimestampFromFile(filename)
-        print('minRequestStartTime:', minRequestStartTime)
-        self.getAllHistoricalPrices(productId, minRequestStartTime, filename,
-                                    self.getGranularityFromTimeframeStr(timeframe))
+            print('writeHistoricalDataForProductToFile:: File: {} already exists. Setting minRequestStartTime: {} ({})'
+                  ''.format(filename, minRequestStartTime, datetime.fromtimestamp(minRequestStartTime)))
+        else:
+            print('writeHistoricalDataForProductToFile:: Writing new file:', filename, 'minRequestStartTime:',
+                  minRequestStartTime, '({})'.format(datetime.fromtimestamp(minRequestStartTime)))
+
+        self.getHistoricalPricesAndWriteToFile(productId, minRequestStartTime, filename,
+                                               self.getGranularityFromTimeframeStr(timeframe))
 
     def getLatestTimestampFromFile(self, filename):
         lastLine = None
@@ -50,14 +55,15 @@ class coinbaseMDRecorder:
         with open(filename) as f:
             for line in f:
                 numLines += 1
-                continue
+                if len(line) > 0:
+                    lastLine = line
             if numLines <= 1:
                 return 0
         latestTimestamp = self.getDateTimestamp(lastLine)
         return latestTimestamp
 
     # Can only request 300 candles per request
-    def getAllHistoricalPrices(self, productId, minReqStartTime, filename, granularity):
+    def getHistoricalPricesAndWriteToFile(self, productId, minReqStartTime, filename, granularity):
         candles = []
         numBlankRequests = 0
         reqEndTime = int(granularity * int(time.time() / granularity))
@@ -72,8 +78,8 @@ class coinbaseMDRecorder:
             }
             requestStr = self.api_url + 'products/{0}/candles'.format(productId)
             r = requests.get(requestStr, params=params)
-            print('Request sent start:', datetime.fromtimestamp(reqStartTime), 'end:',
-                  datetime.fromtimestamp(reqEndTime), 'URL:', r.url)
+            print('getHistoricalPricesAndWriteToFile:: Request sent. URL:', r.url, 'start:',
+                  datetime.fromtimestamp(reqStartTime), 'end:', datetime.fromtimestamp(reqEndTime))
 
             if not r.ok:
                 print("ERROR! Request returned with status code:", r.status_code,
@@ -145,6 +151,7 @@ class coinbaseMDRecorder:
                 products.append(response[const.KEY_PRODUCTID])
 
         print("Total number of eligible products: {}".format(len(products)))
+        print('\n'.join(products))
         return products
 
     def isInterestingQuoteCurrency(self, quoteCurrency):
