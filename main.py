@@ -11,12 +11,13 @@ def main(argv):
     timeframe = None
     api_url = None
     header = None
+    key_date = None
     maxCandlesPerAPIRequest = None
     exchangeName = None
     writeNewFiles = False
 
     try:
-        opts, args = getopt.getopt(argv, "hnq:s:o:t:u:r:m:e:c:")
+        opts, args = getopt.getopt(argv, "hnq:k:s:o:t:u:r:m:e:c:")
     except:
         printHelp()
         sys.exit(2)
@@ -34,6 +35,8 @@ def main(argv):
                 api_url = arg
             case '-r':
                 header = [x.strip() for x in arg.split(',')]
+            case '-k':
+                key_date = arg
             case '-m':
                 maxCandlesPerAPIRequest = int(arg)
             case '-e':
@@ -51,6 +54,8 @@ def main(argv):
                     api_url = config.getAPIURL()
                 if not header:
                     header = config.getHeaderColumns()
+                if not key_date:
+                    key_date = config.getDateKey()
                 if not maxCandlesPerAPIRequest:
                     maxCandlesPerAPIRequest = config.getMaxCandlesPerAPIRequest()
             case _:
@@ -59,10 +64,10 @@ def main(argv):
 
     match exchangeName:
         case 'COINBASE':
-            mdRecorder = coinbaseMDRecorder(api_url, header, maxCandlesPerAPIRequest, exchangeName,
+            mdRecorder = coinbaseMDRecorder(api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
                                             interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory,
                                             timeframe, writeNewFiles)
-            mdRecorder.recordHistoricalPricesForAllInterestingCoins()
+            mdRecorder.startRecordingProcess()
         case _:
             print('ERROR! exchange:', exchangeName, 'not supported. Exiting...')
             quit()
@@ -76,6 +81,7 @@ def printHelp():
     print('-e <Exchange>')
     print('-u <API URL>')
     print('-r <header colums> eg. date, low, open, high, close, volume')
+    print('-k <column name of date/time in received data>')
     print('-m <maxCandlesPerAPIRequest>')
     print('-n Force write new files even if old file with some data exists')
     print('-h Help')

@@ -5,6 +5,7 @@ class mdRecorderConfig:
     KEY_EXCHANGENAME = 'exchange'
     KEY_APIURL = 'api_url'
     KEY_DATAHEADER = 'data_header'
+    KEY_DATEKEY = 'date_key'
     KEY_MAXCANDLESPERREQUEST = 'maxCandlesPerRequest'
 
     def __init__(self, configFilePath):
@@ -26,6 +27,10 @@ class mdRecorderConfig:
         header = self.config.get(self.KEY_DUMMYSECTION, self.KEY_DATAHEADER)
         header_list = [x.strip() for x in header.split(',')]
         return header_list
+
+    def getDateKey(self):
+        date_key = self.config.get(self.KEY_DUMMYSECTION, self.KEY_DATEKEY)
+        return date_key
 
     def getMaxCandlesPerAPIRequest(self):
         maxCandlesPerRequest = self.config.getint(self.KEY_DUMMYSECTION, self.KEY_MAXCANDLESPERREQUEST)

@@ -32,9 +32,5 @@ class CoinbaseExchangeAuth():
         })
         return request
 
-class CoinbaseConsts:
-    KEY_PRODUCTID = 'id'
-    KEY_COINNAME = 'base_currency'
-    KEY_QUOTECURRENCY = 'quote_currency'
-    KEY_BASECURRENCY = 'base_currency'
+
 
