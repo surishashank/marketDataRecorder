@@ -1,10 +1,13 @@
+import math
 import os
 import pandas as pd
+from requestHandler import requestHandler
 
 
 class MDRecorderBase:
     def __init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName, interestingBaseCurrencies,
-                 interestingQuoteCurrencies, outputDirectory, timeframes, writeNewFiles):
+                 interestingQuoteCurrencies, outputDirectory, timeframes, writeNewFiles, maxAPIRequestsPerSec,
+                 cooldownPeriodInSec):
         self.api_url = api_url
         self.header = header
         self.key_date = key_date
@@ -16,6 +19,7 @@ class MDRecorderBase:
         self.outputDirectory = outputDirectory
         self.timeframes = timeframes
         self.writeNewFiles = writeNewFiles
+        self.requestHandler = requestHandler(maxAPIRequestsPerSec, cooldownPeriodInSec)
 
     def getFilenameFromProductIdAndTimeframe(self, productId, timeframe):
         fileName = os.path.join(self.outputDirectory,
@@ -23,16 +27,10 @@ class MDRecorderBase:
         return fileName
 
     def getLatestTimestampFromFile(self, filename):
-        lastLine = None
-        numLines = 0
-        with open(filename) as f:
-            for line in f:
-                numLines += 1
-                if len(line) > 0:
-                    lastLine = line
-            if numLines <= 1:
-                return 0
-        latestTimestamp = self.getDateTimestampFromLine(lastLine)
+        all_candles = pd.read_csv(filename)
+        latestTimestamp = all_candles[self.key_date].max()
+        if math.isnan(latestTimestamp):
+            latestTimestamp = 0
         return latestTimestamp
 
     def getDateTimestampFromLine(self, lineStr):
@@ -48,8 +46,8 @@ class MDRecorderBase:
         if not self.writeNewFiles and os.path.isfile(filename):
             old_candles = pd.read_csv(filename)
             candles = pd.merge(candles, old_candles, how='outer').drop_duplicates(self.key_date)
-            candles.sort_values(self.key_date, inplace=True)
 
+        candles.sort_values(self.key_date, inplace=True)
         candles.to_csv(filename, index=False)
 
     def startRecordingProcess(self):
@@ -59,7 +57,7 @@ class MDRecorderBase:
                 filename = self.getFilenameFromProductIdAndTimeframe(productId, timeframeStr)
                 print("Writing Data for product:{} on timeframe:{}".format(productId, timeframeStr))
                 self.downloadAndWriteData(productId, timeframeStr, filename)
-                print('Successfully recorded data for {} on {}'.format(productId, timeframeStr))
+                print(f'Finished recording data for {productId} on {timeframeStr} to {filename}')
 
     def isInterestingQuoteCurrency(self, quoteCurrency):
         if not self.interestingQuoteCurrencies or len(self.interestingQuoteCurrencies) == 0:
