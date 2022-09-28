@@ -2,9 +2,6 @@ import logging
 import os.path
 import time
 from datetime import datetime
-
-import pandas as pd
-
 from MDRecorderBase import MDRecorderBase
 
 
@@ -66,8 +63,6 @@ class binanceMDRecorder(MDRecorderBase):
                 logging.debug(f'Received blank response. numEmptyResponses:{numEmptyResponses}')
                 continue
 
-            # for candle in r_json:
-            #     print(candle)
             candles += r_json
             numEmptyResponses = 0
             earliestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))

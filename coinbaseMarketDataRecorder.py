@@ -45,7 +45,7 @@ class coinbaseMDRecorder(MDRecorderBase):
         request_url = self.api_url + f'products/{productId}/candles'
         reqEndTime = int(granularity * int(time.time() / granularity))
 
-        logging.debug(f'Starting download of {timeframeStr} candles for {productId} to {filename}.'
+        logging.info(f'Starting download of {timeframeStr} candles for {productId} to {filename}.'
                       f' minReqStartTime:{minReqStartTime}')
         loop_iteration_number = 0
         while numEmptyResponses < 3 and reqEndTime >= minReqStartTime:

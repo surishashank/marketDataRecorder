@@ -1,10 +1,10 @@
 import sys
 import getopt
 from mdRecorderConfig import mdRecorderConfig
-from coinbaseMarketDataRecorder_old import coinbaseMDRecorder_old
 from coinbaseMarketDataRecorder import coinbaseMDRecorder
 from binanceMDRecorder import binanceMDRecorder
 import logging
+
 
 def main(argv):
     interestingQuoteCurrencies = None
@@ -20,8 +20,11 @@ def main(argv):
     maxAPIRequestsPerSec = None
     cooldownPeriodInSec = None
 
+    cmd = ' '.join(sys.argv)
+    print(f'Running command: python {cmd}')
+
     try:
-        opts, args = getopt.getopt(argv, "hnq:k:s:o:t:u:r:m:e:c:l:p:")
+        opts, args = getopt.getopt(argv, "hndq:k:s:o:t:u:r:m:e:c:l:p:")
     except:
         printHelp()
         sys.exit(2)
@@ -54,6 +57,8 @@ def main(argv):
                 maxAPIRequestsPerSec = int(arg)
             case '-p':
                 cooldownPeriodInSec = int(arg)
+            case '-d':
+                logging.getLogger().setLevel(logging.DEBUG)
             case '-c':
                 config = mdRecorderConfig(arg)
                 if not exchangeName:
@@ -75,20 +80,16 @@ def main(argv):
                 sys.exit(2)
 
     match exchangeName:
-        case 'COINBASE_OLD':
-            mdRecorder = coinbaseMDRecorder_old(api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
-                                            interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory,
-                                            timeframe, writeNewFiles)
-        case 'COINBASE_NEW':
+        case 'COINBASE':
             mdRecorder = coinbaseMDRecorder(api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
-                                                interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory,
-                                                timeframe, writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+                                            interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory,
+                                            timeframe, writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
         case 'BINANCE':
             mdRecorder = binanceMDRecorder(api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
                                            interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory,
                                            timeframe, writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
         case _:
-            print('ERROR! exchange:', exchangeName, 'not supported. Exiting...')
+            print(f'Exchange:{exchangeName} not supported. Exiting...')
             quit()
 
     mdRecorder.startRecordingProcess()
@@ -107,11 +108,13 @@ def printHelp():
     print('-l <max number of API requests per sec>')
     print('-p <Cooldown period in case of connection error (in sec)>')
     print('-n Force write new files even if old file with some data exists')
+    print('-d Debug mode (set logging level to debug)')
     print('-h Help')
     print('------------------------------------------------------------------------------------------------')
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(name)s %(levelname)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     logging.Formatter(datefmt='%Y-%m-%d %H:%M:%S')
     main(sys.argv[1:])

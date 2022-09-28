@@ -1,6 +1,7 @@
 import math
 import os
 import pandas as pd
+import logging
 from requestHandler import requestHandler
 
 
@@ -52,12 +53,19 @@ class MDRecorderBase:
 
     def startRecordingProcess(self):
         interestingProductIDs = self.getAllInterestingProductIDs()
+        totalNumberOfFiles = len(interestingProductIDs) * len(self.timeframes)
+        product_number = 0
+        iteration_number = 0
         for productId in interestingProductIDs:
+            product_number += 1
             for timeframeStr in self.timeframes:
+                iteration_number += 1
                 filename = self.getFilenameFromProductIdAndTimeframe(productId, timeframeStr)
-                print("Writing Data for product:{} on timeframe:{}".format(productId, timeframeStr))
+                logging.info(f'Writing Data for product:{productId} ({product_number}/{len(interestingProductIDs)}) on '
+                             f'{timeframeStr} to {filename} ({iteration_number}/{totalNumberOfFiles})')
                 self.downloadAndWriteData(productId, timeframeStr, filename)
-                print(f'Finished recording data for {productId} on {timeframeStr} to {filename}')
+                logging.info(f'Finished recording data for {productId} ({product_number}/{len(interestingProductIDs)}) '
+                             f'on {timeframeStr} to {filename} ({iteration_number}/{totalNumberOfFiles})')
 
     def isInterestingQuoteCurrency(self, quoteCurrency):
         if not self.interestingQuoteCurrencies or len(self.interestingQuoteCurrencies) == 0:
