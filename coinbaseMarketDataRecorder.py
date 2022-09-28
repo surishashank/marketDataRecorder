@@ -33,7 +33,7 @@ class coinbaseMDRecorder(MDRecorderBase):
             if self.isInterestingQuoteCurrency(quoteCurrency) and self.isInterestingBaseCurrency(symbol):
                 product_ids.append(response[consts.KEY_PRODUCTID])
 
-        product_ids_str = '\n'.join(product_ids)
+        product_ids_str = '\n' + '\n'.join(product_ids)
         logging.info(f'{len(product_ids)}/{len(response_list)} interesting products found: {product_ids_str}')
         return product_ids
 
@@ -58,9 +58,9 @@ class coinbaseMDRecorder(MDRecorderBase):
                 }
             else:
                 params = {
-                    'granularity': granularity,
-                    'start': reqStartTime,
-                    'end': reqEndTime
+                    'granularity': str(int(granularity)),
+                    'start': str(int(reqStartTime)),
+                    'end': str(int(reqEndTime))
                 }
 
             r = self.requestHandler.get(request_url, params)

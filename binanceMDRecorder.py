@@ -32,7 +32,7 @@ class binanceMDRecorder(MDRecorderBase):
             if self.isInterestingQuoteCurrency(quote_currency) and self.isInterestingBaseCurrency(symbol):
                 product_ids.append(symbol_info[consts.KEY_PRODUCTID])
 
-        product_ids_str = '\n'.join(product_ids)
+        product_ids_str = '\n' + '\n'.join(product_ids)
         logging.info(f'{len(product_ids)}/{len(symbol_info_list)} interesting products found:{product_ids_str}')
         return product_ids
 
@@ -51,9 +51,9 @@ class binanceMDRecorder(MDRecorderBase):
             params = {
                 'symbol': productId,
                 'interval': timeframeStr,
-                'startTime': reqStartTime,
+                'startTime': str(int(reqStartTime)),
                 # 'endTime': e,
-                'limit': self.maxCandlesPerAPIRequest
+                'limit': str(int(self.maxCandlesPerAPIRequest))
             }
             r = self.requestHandler.get(request_url, params)
             r_json = r.json()

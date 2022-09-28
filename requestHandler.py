@@ -24,7 +24,7 @@ class requestHandler:
             return self.get(request_url, params, timeout)
 
         if not response.ok:
-            logging.error(f'Request url:{request_url} returned with status code:{response.status_code} Sleeping'
+            logging.error(f'Request url:{prepared_request.url} returned with status code:{response.status_code} Sleeping'
                           f' for {self.cooldown_period_sec} seconds...')
             time.sleep(self.cooldown_period_sec)
             return self.get(request_url, params, timeout)
