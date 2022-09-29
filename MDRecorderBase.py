@@ -45,7 +45,7 @@ class MDRecorderBase:
         candles = pd.DataFrame(data, columns=self.header).drop_duplicates(self.key_date)
 
         if not self.writeNewFiles and os.path.isfile(filename):
-            old_candles = pd.read_csv(filename)
+            old_candles = pd.read_csv(filename, dtype=candles.dtypes.to_dict())
             candles = pd.merge(candles, old_candles, how='outer').drop_duplicates(self.key_date)
 
         candles.sort_values(self.key_date, inplace=True)
