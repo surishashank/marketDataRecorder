@@ -20,9 +20,6 @@ def main(argv):
     maxAPIRequestsPerSec = None
     cooldownPeriodInSec = None
 
-    cmd = ' '.join(sys.argv)
-    print(f'Running command: python {cmd}')
-
     try:
         opts, args = getopt.getopt(argv, "hndq:k:s:o:t:u:r:m:e:c:l:p:")
     except:
@@ -78,6 +75,9 @@ def main(argv):
             case _:
                 printHelp()
                 sys.exit(2)
+
+    cmd = ' '.join(sys.argv)
+    logging.info(f'Running command: python {cmd}')
 
     match exchangeName:
         case 'COINBASE':
