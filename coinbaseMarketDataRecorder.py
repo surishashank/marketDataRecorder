@@ -1,4 +1,5 @@
 import logging
+import random
 from datetime import datetime
 import os
 from MDRecorderBase import MDRecorderBase
@@ -33,6 +34,7 @@ class coinbaseMDRecorder(MDRecorderBase):
             if self.isInterestingQuoteCurrency(quoteCurrency) and self.isInterestingBaseCurrency(symbol):
                 product_ids.append(response[consts.KEY_PRODUCTID])
 
+        random.shuffle(product_ids)
         product_ids_str = '\n' + '\n'.join(product_ids)
         logging.info(f'{len(product_ids)}/{len(response_list)} interesting products found: {product_ids_str}')
         return product_ids
@@ -73,7 +75,7 @@ class coinbaseMDRecorder(MDRecorderBase):
             if len(r_json) == 0:
                 numEmptyResponses += 1
                 reqStartTime += granularity * self.maxCandlesPerAPIRequest
-                logging.debug(f'Received empty response. numEmptyResponses:{numEmptyResponses}')
+                logging.info(f'Received empty response. numEmptyResponses:{numEmptyResponses}')
                 continue
 
             candles += r_json
@@ -83,7 +85,7 @@ class coinbaseMDRecorder(MDRecorderBase):
             logging.info(f'NumCandlesReceived:{len(r_json)}'
                           f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp)})'
                           f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp)})')
-        self.writeToCsv(candles[::-1], filename)
+        return self.writeToCsv(candles[::-1], filename)
 
     def getMinReqStartTime(self, filename):
         fileExists = os.path.isfile(filename)

@@ -1,5 +1,6 @@
 import logging
 import os.path
+import random
 import time
 from datetime import datetime
 from MDRecorderBase import MDRecorderBase
@@ -33,6 +34,7 @@ class binanceMDRecorder(MDRecorderBase):
                 product_id = f'{symbol}-{quote_currency}'
                 product_ids.append(product_id)
 
+        random.shuffle(product_ids)
         product_ids_str = '\n' + '\n'.join(product_ids)
         logging.info(f'{len(product_ids)}/{len(symbol_info_list)} interesting products found:{product_ids_str}')
         return product_ids
@@ -61,7 +63,7 @@ class binanceMDRecorder(MDRecorderBase):
             if len(r_json) == 0:
                 numEmptyResponses += 1
                 reqStartTime += granularity * self.maxCandlesPerAPIRequest
-                logging.debug(f'Received blank response. numEmptyResponses:{numEmptyResponses}')
+                logging.info(f'Received blank response. numEmptyResponses:{numEmptyResponses}')
                 continue
 
             candles += r_json
@@ -72,7 +74,7 @@ class binanceMDRecorder(MDRecorderBase):
                           f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp / 1000)})'
                           f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp / 1000)})')
             reqStartTime = latestTimestamp + granularity
-        self.writeToCsv(candles, filename)
+        return self.writeToCsv(candles, filename)
 
     # Available timeframes:
     # s-> seconds; m -> minutes; h -> hours; d -> days; w -> weeks; M -> months

@@ -43,29 +43,58 @@ class MDRecorderBase:
 
     def writeToCsv(self, data, filename):
         candles = pd.DataFrame(data, columns=self.header).drop_duplicates(self.key_date)
-
         if not self.writeNewFiles and os.path.isfile(filename):
-            old_candles = pd.read_csv(filename, dtype=candles.dtypes.to_dict())
-            candles = pd.merge(candles, old_candles, how='outer').drop_duplicates(self.key_date)
+            try:
+                old_candles = pd.read_csv(filename, dtype=candles.dtypes.to_dict())
+                candles = pd.merge(candles, old_candles, how='outer').drop_duplicates(self.key_date)
+            except Exception as e:
+                old_candles = pd.read_csv(filename)
+                type1 = candles.dtypes
+                type2 = old_candles.dtypes
+                logging.exception(f'Caught exception "{e}" while reading/writing file {filename}.\n'
+                                  f'Type1:{type1}\nType2:{type2}')
+                try:
+                    logging.exception(f'Trying to convert new candles to Type2 instead.')
+                    for key, value in type2.items():
+                        candles[key] = candles[key].astype(value)
+                    candles = pd.merge(candles, old_candles, how='outer').drop_duplicates(self.key_date)
+                except Exception as e:
+                    logging.exception(f'Caught exception "{e}" while retrying. Skipping...\n'
+                                      f'Type1:{type1}\nType2:{type2}')
+                    return False
 
         candles.sort_values(self.key_date, inplace=True)
         candles.to_csv(filename, index=False)
+        return True
 
     def startRecordingProcess(self):
         interestingProductIDs = self.getAllInterestingProductIDs()
         totalNumberOfFiles = len(interestingProductIDs) * len(self.timeframes)
         product_number = 0
         iteration_number = 0
+        failed_iterations = []
         for productId in interestingProductIDs:
             product_number += 1
             for timeframeStr in self.timeframes:
                 iteration_number += 1
                 filename = self.getFilenameFromProductIdAndTimeframe(productId, timeframeStr)
-                logging.info(f'Writing Data for product:{productId} ({product_number}/{len(interestingProductIDs)}) on '
+                logging.info(f'Writing data for product:{productId} ({product_number}/{len(interestingProductIDs)}) on '
                              f'{timeframeStr} to {filename} ({iteration_number}/{totalNumberOfFiles})')
-                self.downloadAndWriteData(productId, timeframeStr, filename)
-                logging.info(f'Finished recording data for {productId} ({product_number}/{len(interestingProductIDs)}) '
+                success = self.downloadAndWriteData(productId, timeframeStr, filename)
+                log_message_prefix = 'Successfully recorded data for'
+                if not success:
+                    log_message_prefix = 'Failed to record data for'
+                    failed_iterations.append(filename)
+                logging.info(f'{log_message_prefix} {productId} ({product_number}/{len(interestingProductIDs)}) '
                              f'on {timeframeStr} to {filename} ({iteration_number}/{totalNumberOfFiles})')
+
+        num_failed_iterations = len(failed_iterations)
+        num_successful_iterations = totalNumberOfFiles - num_failed_iterations
+        logging.info(f'Recording Process Completed. TotalIterations:{totalNumberOfFiles} '
+                     f'NumSuccesses:{num_successful_iterations} NumFailures:{num_failed_iterations}')
+        if num_failed_iterations > 0:
+            print_str = '\n' + '\n'.join(failed_iterations)
+            logging.info(f'Files with errors:{print_str}')
 
     def isInterestingQuoteCurrency(self, quoteCurrency):
         if not self.interestingQuoteCurrencies or len(self.interestingQuoteCurrencies) == 0:
