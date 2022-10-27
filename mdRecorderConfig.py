@@ -10,6 +10,9 @@ class mdRecorderConfig:
     KEY_MAXCANDLESPERREQUEST = 'maxCandlesPerRequest'
     KEY_MAXNUMBEROFAPIREQUESTPERSECOND = 'max_api_requests_per_second'
     KEY_COOLDOWNPERIODINSECONDS = 'cooldown_period_in_seconds'
+    KEY_TIMEFRAMES = 'timeframes'
+    KEY_INTERESTINGQUOTECURRENCIES = 'interesting_quote_currencies'
+    KEY_INTERESTINGCOINS = 'interesting_coins'
 
     def __init__(self, configFilePath):
         with open(configFilePath, 'r') as f:
@@ -46,3 +49,22 @@ class mdRecorderConfig:
     def getCooldownPeriodInSec(self):
         cooldownPeriodInSec = self.config.getint(self.KEY_DUMMYSECTION, self.KEY_COOLDOWNPERIODINSECONDS)
         return cooldownPeriodInSec
+
+    def getTimeframes(self):
+        configStr = self.config.get(self.KEY_DUMMYSECTION, self.KEY_TIMEFRAMES)
+        retval = [x.strip() for x in configStr.split(',')]
+        return retval
+
+    def getInterestingQuoteCurrencies(self):
+        configStr = self.config.get(self.KEY_DUMMYSECTION, self.KEY_INTERESTINGQUOTECURRENCIES, fallback=None)
+        if not configStr:
+            return []
+        retval = [x.strip() for x in configStr.split(',')]
+        return retval
+
+    def getInterestingCoins(self):
+        configStr = self.config.get(self.KEY_DUMMYSECTION, self.KEY_INTERESTINGCOINS, fallback=None)
+        if not configStr:
+            return []
+        retval = [x.strip() for x in configStr.split(',')]
+        return retval
