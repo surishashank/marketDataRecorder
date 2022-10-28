@@ -11,6 +11,9 @@ class consts:
     KEY_BASEASSET = 'baseAsset'
     KEY_QUOTEASSET = 'quoteAsset'
     KEY_PRODUCTID = 'symbol'
+    KEY_TRADINGSTATUS = 'status'
+    KEY_TRADINGSTATUS_TRADING = 'TRADING'
+    KEY_TRADINGSTATUS_DELISTED = 'BREAK'
 
 
 class binanceMDRecorder(MDRecorderBase):
@@ -25,21 +28,40 @@ class binanceMDRecorder(MDRecorderBase):
         request_url = self.api_url + 'exchangeInfo'
         r = self.requestHandler.get(request_url)
 
-        product_ids = []
+        interesting_product_ids = []
         symbol_info_list = r.json()[consts.KEY_SYMBOLS]
         for symbol_info in symbol_info_list:
             quote_currency = symbol_info[consts.KEY_QUOTEASSET]
             symbol = symbol_info[consts.KEY_BASEASSET]
             if self.isInterestingQuoteCurrency(quote_currency) and self.isInterestingBaseCurrency(symbol):
-                product_id = f'{symbol}-{quote_currency}'
-                product_ids.append(product_id)
+                product_id = self.getProductIdFromCoinAndQuoteCurrency(symbol, quote_currency)
+                interesting_product_ids.append(product_id)
 
-        random.shuffle(product_ids)
-        product_ids_str = '\n' + '\n'.join(product_ids)
-        logging.info(f'{len(product_ids)}/{len(symbol_info_list)} interesting products found:{product_ids_str}')
-        return product_ids
+        random.shuffle(interesting_product_ids)
+        product_ids_str = '\n' + '\n'.join(interesting_product_ids)
+        logging.info(f'{len(interesting_product_ids)}/{len(symbol_info_list)} interesting products found:{product_ids_str}')
+        return interesting_product_ids
 
-    def downloadAndWriteData(self, productId, timeframeStr, filename):
+    def getAllDelistedProductIDs(self, interesting_product_id_list):
+        request_url = self.api_url + 'exchangeInfo'
+        r = self.requestHandler.get(request_url)
+
+        delisted_product_ids = []
+        symbol_info_list = r.json()[consts.KEY_SYMBOLS]
+        for symbol_info in symbol_info_list:
+            trading_status = symbol_info[consts.KEY_TRADINGSTATUS]
+            if trading_status == consts.KEY_TRADINGSTATUS_DELISTED:
+                symbol = symbol_info[consts.KEY_BASEASSET]
+                quote_currency = symbol_info[consts.KEY_QUOTEASSET]
+                product_id = self.getProductIdFromCoinAndQuoteCurrency(symbol, quote_currency)
+                if not interesting_product_id_list or product_id in interesting_product_id_list:
+                    delisted_product_ids.append(product_id)
+
+        delisted_product_ids_str = '\n' + '\n'.join(delisted_product_ids)
+        logging.info(f'{len(delisted_product_ids)} delisted products found: {delisted_product_ids_str}')
+        return delisted_product_ids
+
+    def downloadAndWriteData(self, productId, timeframeStr, filename, isDelisted):
         if not self.validateTimeframeStr(timeframeStr):
             logging.error(f'Invalid timeframe:{timeframeStr} for ProductID:{productId}. Skipping...')
             return
@@ -73,6 +95,16 @@ class binanceMDRecorder(MDRecorderBase):
             logging.info(f'NumCandlesReceived:{len(r_json)}'
                           f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp / 1000)})'
                           f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp / 1000)})')
+
+            # These conditions would be true only if a request is sent on a delisted product
+            # and there is an up to date existing market data file
+            if isDelisted and len(r_json) == 1 and len(candles) == 1 and reqStartTime != 0:
+                rawLastLine = self.getLastNonBlankLineFromFile(filename)
+                candleStr = ','.join(str(e) for e in candles[0])
+                if candleStr == rawLastLine:
+                    logging.info(f'Nothing to update for delisted product:{productId}. Skipping file:{filename}')
+                    return True
+
             reqStartTime = latestTimestamp + granularity
         return self.writeToCsv(candles, filename)
 

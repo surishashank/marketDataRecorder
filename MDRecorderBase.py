@@ -22,6 +22,10 @@ class MDRecorderBase:
         self.writeNewFiles = writeNewFiles
         self.requestHandler = requestHandler(maxAPIRequestsPerSec, cooldownPeriodInSec)
 
+    @staticmethod
+    def getProductIdFromCoinAndQuoteCurrency(coinName, quoteCurrency):
+        return f'{coinName}-{quoteCurrency}'
+
     def getFilenameFromProductIdAndTimeframe(self, productId, timeframe):
         fileName = os.path.join(self.outputDirectory,
                                 '{}_{}_{}.csv'.format(self.exchangeName, productId, timeframe))
@@ -33,6 +37,14 @@ class MDRecorderBase:
         if math.isnan(latestTimestamp):
             latestTimestamp = 0
         return latestTimestamp
+
+    @staticmethod
+    def getLastNonBlankLineFromFile(filename):
+        lastLine = None
+        for line in open(filename):
+            if line.strip():
+                lastLine = line.strip()
+        return lastLine
 
     def getDateTimestampFromLine(self, lineStr):
         if not lineStr:
@@ -69,6 +81,7 @@ class MDRecorderBase:
 
     def startRecordingProcess(self):
         interestingProductIDs = self.getAllInterestingProductIDs()
+        delistedProductIDs = self.getAllDelistedProductIDs(interestingProductIDs)
         totalNumberOfFiles = len(interestingProductIDs) * len(self.timeframes)
         product_number = 0
         iteration_number = 0
@@ -78,9 +91,11 @@ class MDRecorderBase:
             for timeframeStr in self.timeframes:
                 iteration_number += 1
                 filename = self.getFilenameFromProductIdAndTimeframe(productId, timeframeStr)
+                is_delisted = productId in delistedProductIDs
+
                 logging.info(f'Writing data for product:{productId} ({product_number}/{len(interestingProductIDs)}) on '
                              f'{timeframeStr} to {filename} ({iteration_number}/{totalNumberOfFiles})')
-                success = self.downloadAndWriteData(productId, timeframeStr, filename)
+                success = self.downloadAndWriteData(productId, timeframeStr, filename, is_delisted)
                 log_message_prefix = 'Successfully recorded data for'
                 if not success:
                     log_message_prefix = 'Failed to record data for'
@@ -113,5 +128,8 @@ class MDRecorderBase:
     def getAllInterestingProductIDs(self):
         raise NotImplementedError('ERROR: Method getAllInterestingProductIDs must be defined in child class!')
 
-    def downloadAndWriteData(self, productId, timeframeStr, filename):
+    def getAllDelistedProductIDs(self, interesting_product_id_list):
+        raise NotImplementedError('ERROR: Method getAllDelistedProductIDs must be defined in child class!')
+
+    def downloadAndWriteData(self, productId, timeframeStr, filename, isDelisted):
         raise NotImplementedError('ERROR: Method downloadAndWriteData must be defined in child class!')
