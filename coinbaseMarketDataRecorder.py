@@ -97,8 +97,13 @@ class coinbaseMDRecorder(MDRecorderBase):
 
                 if isDelisted and minReqStartTime != 0:
                     latestCandleStr = ','.join(str(e) for e in r_json[0])
-                    rawLastLineFromDataFile = self.getLastNonBlankLineFromFile(filename)
-                    if latestCandleStr == rawLastLineFromDataFile:
+                    rawLastLine = self.getLastNonBlankLineFromFile(filename)
+
+                    # also create float arrays in case one of the lines has a number like 1.0 instead of 1 etc
+                    latestCandleFloatArr = [float(x) for x in r_json[0]]
+                    rawLastLineArr = [float(x) for x in rawLastLine.split(',')]
+
+                    if latestCandleStr == rawLastLine or latestCandleFloatArr == rawLastLineArr:
                         # This code will only be reached if a request is sent on a delisted product
                         # and there is an up to date existing market data file
                         logging.info(f'Nothing to update for delisted product:{productId}. Skipping file:{filename}')

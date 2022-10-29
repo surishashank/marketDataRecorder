@@ -99,9 +99,14 @@ class binanceMDRecorder(MDRecorderBase):
             # These conditions would be true only if a request is sent on a delisted product
             # and there is an up to date existing market data file
             if isDelisted and len(r_json) == 1 and len(candles) == 1 and reqStartTime != 0:
-                rawLastLine = self.getLastNonBlankLineFromFile(filename)
                 candleStr = ','.join(str(e) for e in candles[0])
-                if candleStr == rawLastLine:
+                rawLastLine = self.getLastNonBlankLineFromFile(filename)
+
+                # also create float arrays in case one of the lines has a number like 1.0 instead of 1 etc
+                candleFloatArr = [float(x) for x in candles[0]]
+                rawLastLineArr = [float(x) for x in rawLastLine.split(',')]
+
+                if candleStr == rawLastLine or candleFloatArr == rawLastLineArr:
                     logging.info(f'Nothing to update for delisted product:{productId}. Skipping file:{filename}')
                     return True
 
