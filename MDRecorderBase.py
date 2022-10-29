@@ -75,6 +75,14 @@ class MDRecorderBase:
                                       f'Type1:{type1}\nType2:{type2}')
                     return False
 
+            # Sanity check of new data (check that all the "old_candles" (except the last one) exist is "candles"
+            if len(old_candles.iloc[:-1,:].merge(candles)) == len(old_candles.iloc[:-1,:]):
+                logging.info(f'Sanity check passed before rewriting existing data file:{filename}')
+            else:
+                logging.error(f'Differences found between existing and new candles when writing file:{filename}. '
+                              f'Not updating this file. Investigate further.')
+                return False
+
         candles.sort_values(self.key_date, inplace=True)
         candles.to_csv(filename, index=False)
         return True
