@@ -64,13 +64,15 @@ class binanceMDRecorder(MDRecorderBase):
     def downloadAndWriteData(self, productId, timeframeStr, filename, isDelisted):
         if not self.validateTimeframeStr(timeframeStr):
             logging.error(f'Invalid timeframe:{timeframeStr} for ProductID:{productId}. Skipping...')
-            return
+            return False
 
         granularity = self.getNumMillisecondsFromTimeframeStr(timeframeStr)
         reqStartTime = self.getReqStartTime(filename)
         candles = []
         numEmptyResponses = 0
         request_url = self.api_url + 'klines'
+        logging.info(f'Starting download of {timeframeStr} candles for {productId} to {filename}.'
+                     f' reqStartTime:{reqStartTime}')
 
         while numEmptyResponses < 3 and reqStartTime < time.time() * 1000:
             params = {
@@ -130,7 +132,7 @@ class binanceMDRecorder(MDRecorderBase):
     @staticmethod
     def getNumMillisecondsFromTimeframeStr(timeframeStr):
         if not binanceMDRecorder.validateTimeframeStr(timeframeStr):
-            return 0
+            quit()
 
         match timeframeStr:
             case '1s':
