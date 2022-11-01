@@ -112,7 +112,6 @@ class coinbaseMDRecorder(MDRecorderBase):
             reqEndTime = reqStartTime - granularity
             if len(r_json) == 0:
                 numEmptyResponses += 1
-                reqStartTime += granularity * self.maxCandlesPerAPIRequest
                 logging.info(f'Received empty response. numEmptyResponses:{numEmptyResponses}')
                 continue
 
