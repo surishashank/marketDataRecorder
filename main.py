@@ -1,8 +1,11 @@
 import argparse
 import sys
+
+from ftxMDRecorder import ftxMDRecorder
 from mdRecorderConfig import mdRecorderConfig
 from coinbaseMarketDataRecorder import coinbaseMDRecorder
 from binanceMDRecorder import binanceMDRecorder
+from kucoinMDRecorder import kucoinMDRecorder
 import logging
 
 
@@ -71,6 +74,14 @@ def main():
             mdRecorder = binanceMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                            interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
                                            timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+        case 'KUCOIN':
+            mdRecorder = kucoinMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
+                                          interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
+                                          timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+        case 'FTX':
+            mdRecorder = ftxMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
+                                       interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
+                                       timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
         case _:
             print(f'Exchange:{exchangeName} not supported. Exiting...')
             quit()
