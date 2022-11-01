@@ -120,7 +120,7 @@ class ftxMDRecorder(MDRecorderBase):
             numEmptyResponses = 0
             earliestTimestamp = int(r_json[0][consts.KEY_DATA_TIME])
             latestTimestamp = int(r_json[-1][consts.KEY_DATA_TIME])
-            logging.info(f'NumCandlesReceived:{len(r_json)} candlesLen:{len(candles)}'
+            logging.info(f'NumCandlesReceived:{len(r_json)}'
                          f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp / 1000)})'
                          f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp / 1000)})')
         return self.writeToCsv(candles, filename)
