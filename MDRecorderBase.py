@@ -91,8 +91,8 @@ class MDRecorderBase:
         return True
 
     def startRecordingProcess(self):
-        interestingProductIDs = self.getAllInterestingProductIDs()
-        delistedProductIDs = self.getAllDelistedProductIDs(interestingProductIDs)
+        interestingProductIDs = list(dict.fromkeys(self.getAllInterestingProductIDs()))  # to remove any duplicates
+        delistedProductIDs = list(dict.fromkeys(self.getAllDelistedProductIDs(interestingProductIDs)))  # to remove any duplicates
         totalNumberOfFiles = len(interestingProductIDs) * len(self.timeframes)
         product_number = 0
         iteration_number = 0
