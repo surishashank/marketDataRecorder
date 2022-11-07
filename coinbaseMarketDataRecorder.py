@@ -35,7 +35,10 @@ class coinbaseMDRecorder(MDRecorderBase):
             quoteCurrency = response[consts.KEY_QUOTECURRENCY]
             symbol = response[consts.KEY_BASECURRENCY]
             if self.isInterestingQuoteCurrency(quoteCurrency) and self.isInterestingBaseCurrency(symbol):
-                product_id = self.getProductIdFromCoinAndQuoteCurrency(symbol, quoteCurrency)
+                # Get product_id from response instead of from getProductIdFromCoinAndQuoteCurrency because
+                # coinbase has cases like BTCAUCTION-USD where symbol = BTC & quoteCurrency = USD for both
+                # BTCUSD and BTCAUCTION-USD
+                product_id = response[consts.KEY_PRODUCTID]
                 interesting_product_ids.append(product_id)
 
         random.shuffle(interesting_product_ids)
@@ -52,9 +55,10 @@ class coinbaseMDRecorder(MDRecorderBase):
         for response in response_list:
             trading_status = response[consts.KEY_TRADINGSTATUS]
             if trading_status == consts.KEY_TRADINGSTATUS_DELISTED:
-                quoteCurrency = response[consts.KEY_QUOTECURRENCY]
-                symbol = response[consts.KEY_BASECURRENCY]
-                product_id = self.getProductIdFromCoinAndQuoteCurrency(symbol, quoteCurrency)
+                # Get product_id from response instead of from getProductIdFromCoinAndQuoteCurrency because
+                # coinbase has cases like BTCAUCTION-USD where symbol = BTC & quoteCurrency = USD for both
+                # BTCUSD and BTCAUCTION-USD
+                product_id = response[consts.KEY_PRODUCTID]
                 if not interesting_product_id_list or product_id in interesting_product_id_list:
                     delisted_product_ids.append(product_id)
 
