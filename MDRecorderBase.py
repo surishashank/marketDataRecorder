@@ -32,6 +32,9 @@ class MDRecorderBase:
         return fileName
 
     def getLatestTimestampFromFile(self, filename):
+        if not os.path.isfile(filename) or os.path.getsize(filename) == 0:
+            return 0
+
         all_candles = pd.read_csv(filename)
         latestTimestamp = all_candles[self.key_date].max()
         if math.isnan(latestTimestamp):
