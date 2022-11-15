@@ -123,7 +123,7 @@ class coinbaseMDRecorder(MDRecorderBase):
             numEmptyResponses = 0
             earliestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
             latestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
-            logging.info(f'NumCandlesReceived:{len(r_json)}'
+            logging.info(f'URL:{r.url} NumCandlesReceived:{len(r_json)}'
                          f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp)})'
                          f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp)})')
 
