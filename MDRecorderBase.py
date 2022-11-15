@@ -1,3 +1,4 @@
+import concurrent.futures
 import math
 import os
 import pandas as pd
@@ -90,37 +91,46 @@ class MDRecorderBase:
         candles.to_csv(filename, index=False)
         return True
 
-    def startRecordingProcess(self):
+    def startRecordingProcess(self, maxThreads):
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxThreads)
+        futures = []
+
         interestingProductIDs = list(dict.fromkeys(self.getAllInterestingProductIDs()))  # to remove any duplicates
         delistedProductIDs = list(dict.fromkeys(self.getAllDelistedProductIDs(interestingProductIDs)))  # to remove any duplicates
         totalNumberOfFiles = len(interestingProductIDs) * len(self.timeframes)
-        product_number = 0
         iteration_number = 0
         failed_iterations = []
         for productId in interestingProductIDs:
-            product_number += 1
+            is_delisted = productId in delistedProductIDs
             for timeframeStr in self.timeframes:
                 iteration_number += 1
-                filename = self.getFilenameFromProductIdAndTimeframe(productId, timeframeStr)
-                is_delisted = productId in delistedProductIDs
+                futures.append(executor.submit(self.initiateDownloadAndRecord, productId, timeframeStr, is_delisted))
 
-                logging.info(f'Writing data for product:{productId} ({product_number}/{len(interestingProductIDs)}) on '
-                             f'{timeframeStr} to {filename} ({iteration_number}/{totalNumberOfFiles})')
-                success = self.downloadAndWriteData(productId, timeframeStr, filename, is_delisted)
+        num_successful_iterations = 0
+        num_failed_iterations = 0
+        filenum = 0
+        for future in concurrent.futures.as_completed(futures):
+            filenum += 1
+            success, filename = future.result()
+            if success:
                 log_message_prefix = 'Successfully recorded data for'
-                if not success:
-                    log_message_prefix = 'Failed to record data for'
-                    failed_iterations.append(filename)
-                logging.info(f'{log_message_prefix} {productId} ({product_number}/{len(interestingProductIDs)}) '
-                             f'on {timeframeStr} to {filename} ({iteration_number}/{totalNumberOfFiles})')
+                num_successful_iterations += 1
+            else:
+                log_message_prefix = 'Failed to record data for'
+                failed_iterations.append(filename)
+                num_failed_iterations += 1
+            logging.info(f'{log_message_prefix} {filename} ({filenum}/{totalNumberOfFiles})')
 
-        num_failed_iterations = len(failed_iterations)
-        num_successful_iterations = totalNumberOfFiles - num_failed_iterations
         logging.info(f'Recording Process Completed. TotalIterations:{totalNumberOfFiles} '
                      f'NumSuccesses:{num_successful_iterations} NumFailures:{num_failed_iterations}')
         if num_failed_iterations > 0:
             print_str = '\n' + '\n'.join(failed_iterations)
             logging.info(f'Files with errors:{print_str}')
+
+    def initiateDownloadAndRecord(self, productId, timeframeStr, is_delisted):
+        filename = self.getFilenameFromProductIdAndTimeframe(productId, timeframeStr)
+        success = self.downloadAndWriteData(productId, timeframeStr, filename, is_delisted)
+        return success, filename
 
     def isInterestingQuoteCurrency(self, quoteCurrency):
         if not self.interestingQuoteCurrencies or len(self.interestingQuoteCurrencies) == 0:

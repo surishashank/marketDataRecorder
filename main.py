@@ -21,10 +21,12 @@ def main():
     requiredArgs.add_argument('-o', dest='outputDirectory', type=str, required=True, metavar='',
                               help='Directory where market data files are saved')
 
-    optionalArgs.add_argument('-q', dest='interestingQuoteCurrencies', type=str, required=False, metavar='',
-                              help='List of quote currencies to download market data for (default = all)')
     optionalArgs.add_argument('-s', dest='interestingBaseCurrencies', type=str, required=False, metavar='',
                               help='List of coins to download market data for (default = all)')
+    optionalArgs.add_argument('-q', dest='interestingQuoteCurrencies', type=str, required=False, metavar='',
+                              help='List of quote currencies to download market data for (default = all)')
+    optionalArgs.add_argument('-x', dest='numThreads', type=int, required=False, metavar='',
+                              help='Number of threads to run (default = 5)')
     optionalArgs.add_argument('-n', dest='writeNewFiles', action='store_true', required=False,
                               help='Force write new market data files (even if old ones exist)')
 
@@ -86,7 +88,8 @@ def main():
             print(f'Exchange:{exchangeName} not supported. Exiting...')
             quit()
 
-    mdRecorder.startRecordingProcess()
+    numThreads = args.numThreads if args.numThreads else 5
+    mdRecorder.startRecordingProcess(numThreads)
 
 
 if __name__ == "__main__":
