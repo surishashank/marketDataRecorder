@@ -16,10 +16,10 @@ class requestHandler:
             prepared_request = requests.PreparedRequest()
             prepared_request.prepare_url(request_url, params)
             logging.info(f'Sending request: {prepared_request.url}')
-            # response = requests.get(request_url, params=params, timeout=timeout)
             response = self.sendRequest(prepared_request.url, timeout=timeout)
         except Exception as e:
-            logging.exception(f'Connection error. Cooling down for {self.cooldown_period_sec}...')
+            logging.exception(f'Connection error while sending request {prepared_request.url}. '
+                              f'Cooling down for {self.cooldown_period_sec}...')
             time.sleep(self.cooldown_period_sec)
             return self.get(request_url, params, timeout)
 
