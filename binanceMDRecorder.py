@@ -39,7 +39,8 @@ class binanceMDRecorder(MDRecorderBase):
 
         random.shuffle(interesting_product_ids)
         product_ids_str = '\n' + '\n'.join(interesting_product_ids)
-        logging.info(f'{len(interesting_product_ids)}/{len(symbol_info_list)} interesting products found:{product_ids_str}')
+        logging.info(
+            f'{len(interesting_product_ids)}/{len(symbol_info_list)} interesting products found:{product_ids_str}')
         return interesting_product_ids
 
     def getAllDelistedProductIDs(self, interesting_product_id_list):
@@ -76,7 +77,7 @@ class binanceMDRecorder(MDRecorderBase):
 
         while numEmptyResponses < 3 and reqStartTime < time.time() * 1000:
             params = {
-                'symbol': productId.replace('-',''),
+                'symbol': productId.replace('-', ''),
                 'interval': timeframeStr,
                 'startTime': str(int(reqStartTime)),
                 # 'endTime': e,
@@ -94,9 +95,9 @@ class binanceMDRecorder(MDRecorderBase):
             numEmptyResponses = 0
             earliestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
             latestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
-            logging.info(f'NumCandlesReceived:{len(r_json)}'
-                          f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp / 1000)})'
-                          f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp / 1000)})')
+            logging.info(f'URL:{r.url} NumCandlesReceived:{len(r_json)} '
+                         f'EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp / 1000)}) '
+                         f'LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp / 1000)})')
 
             # These conditions would be true only if a request is sent on a delisted product
             # and there is an up to date existing market data file
