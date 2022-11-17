@@ -51,7 +51,9 @@ class mdRecorderConfig:
         return cooldownPeriodInSec
 
     def getTimeframes(self):
-        configStr = self.config.get(self.KEY_DUMMYSECTION, self.KEY_TIMEFRAMES)
+        configStr = self.config.get(self.KEY_DUMMYSECTION, self.KEY_TIMEFRAMES, fallback=None)
+        if not configStr:
+            return None
         retval = [x.strip() for x in configStr.split(',')]
         return retval
 

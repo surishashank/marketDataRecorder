@@ -82,11 +82,10 @@ class binanceFundingRateRecorder(MDRecorderBase):
         logging.info(f'Starting download of funding rates for {productId} to {filename}. '
                      f'minReqStartTime:{minReqStartTime}')
         loop_iteration_number = 0
-        while reqEndTime >= minReqStartTime:
+        while reqEndTime > minReqStartTime:
             loop_iteration_number += 1
             reqStartTime = reqEndTime - granularity * self.maxCandlesPerAPIRequest
             reqStartTime = max(minReqStartTime, reqStartTime)
-            print(f'reqStartTime:{reqStartTime} reqEndTime:{reqEndTime}')
 
             params = {
                 'symbol': productId.replace('-', ''),
@@ -137,6 +136,10 @@ class binanceFundingRateRecorder(MDRecorderBase):
             logging.info(f'URL:{r.url} NumCandlesReceived:{len(new_candles_arr)} '
                          f'EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp / 1000)}) '
                          f'LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp / 1000)})')
+
+        if loop_iteration_number == 0 and len(candles) == 0 and minReqStartTime != 0:
+            logging.info(f'Data already up to date for {filename}')
+            return True
 
         return self.writeToCsv(candles, filename)
 
