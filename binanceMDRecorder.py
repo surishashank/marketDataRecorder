@@ -133,7 +133,7 @@ class binanceMDRecorder(MDRecorderBase):
     @staticmethod
     def getNumMillisecondsFromTimeframeStr(timeframeStr):
         if not binanceMDRecorder.validateTimeframeStr(timeframeStr):
-            quit()
+            os._exit(1)
 
         match timeframeStr:
             case '1s':
@@ -170,7 +170,7 @@ class binanceMDRecorder(MDRecorderBase):
                 return 1000 * 60 * 60 * 24 * 28
             case _:  # this should never happen because we validate the parameter beforehand
                 logging.error(f'Serious ERROR. Unsupported timeframe:{timeframeStr}. Investigate and fix...')
-                quit()
+                os._exit(1)
 
     def getReqStartTime(self, filename):
         fileExists = os.path.isfile(filename)

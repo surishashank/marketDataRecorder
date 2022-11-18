@@ -148,7 +148,7 @@ class kucoinMDRecorder(MDRecorderBase):
     @staticmethod
     def getNumSecondsFromTimeframeStr(timeframeStr):
         if not kucoinMDRecorder.validateTimeframeStr(timeframeStr):
-            quit()
+            os._exit(1)
 
         match timeframeStr:
             case '1m':
@@ -179,12 +179,12 @@ class kucoinMDRecorder(MDRecorderBase):
                 return 60 * 60 * 24 * 7
             case _:  # this should never happen because we validate the parameter beforehand
                 logging.error(f'Serious ERROR. Unsupported timeframe:{timeframeStr}. Investigate and fix...')
-                quit()
+                os._exit(1)
 
     @staticmethod
     def getCandleTypeFromTimeframeStr(timeframeStr):
         if not kucoinMDRecorder.validateTimeframeStr(timeframeStr):
-            quit()
+            os._exit(1)
 
         match timeframeStr:
             case '1m':
@@ -215,7 +215,7 @@ class kucoinMDRecorder(MDRecorderBase):
                 return '1week'
             case _:  # this should never happen because we validate the parameter beforehand
                 logging.error(f'Serious ERROR. Unsupported timeframe:{timeframeStr}. Investigate and fix...')
-                quit()
+                os._exit(1)
 
     def getMinReqStartTime(self, filename):
         fileExists = os.path.isfile(filename)

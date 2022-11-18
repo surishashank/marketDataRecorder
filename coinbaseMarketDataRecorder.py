@@ -155,4 +155,4 @@ class coinbaseMDRecorder(MDRecorderBase):
                 return 86400
             case _:
                 logging.error(f'Unsupported timeframe:{timeframeStr}. Investigate and fix...')
-                quit()
+                os._exit(1)

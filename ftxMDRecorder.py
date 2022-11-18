@@ -144,7 +144,7 @@ class ftxMDRecorder(MDRecorderBase):
                 return 86400
             case _:
                 logging.error(f'Unsupported timeframe:{timeframeStr}. Investigate and fix...')
-                quit()
+                os._exit(1)
 
     def getMinReqStartTime(self, filename):
         fileExists = os.path.isfile(filename)
