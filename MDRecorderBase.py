@@ -74,6 +74,7 @@ class MDRecorderBase:
                     for key, value in type2.items():
                         candles[key] = candles[key].astype(value)
                     candles = pd.merge(candles, old_candles, how='outer').drop_duplicates(self.key_date)
+                    logging.info(f'Converted new candles to Type2 successfully')
                 except Exception as e:
                     logging.exception(f'Caught exception "{e}" while retrying. Skipping...\n'
                                       f'Type1:{type1}\nType2:{type2}')
@@ -94,6 +95,7 @@ class MDRecorderBase:
     def startRecordingProcess(self, maxThreads):
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxThreads)
         futures = []
+        logging.info(f'Starting recording process with maxThreads={maxThreads}')
 
         interestingProductIDs = list(dict.fromkeys(self.getAllInterestingProductIDs()))  # to remove any duplicates
         delistedProductIDs = list(dict.fromkeys(self.getAllDelistedProductIDs(interestingProductIDs)))  # to remove any duplicates
