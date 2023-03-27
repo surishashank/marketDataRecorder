@@ -3,7 +3,7 @@ import math
 import os
 import pandas as pd
 import logging
-from requestHandler import requestHandler
+from totalRequestHandler import totalRequestHandler as requestHandler
 
 
 class MDRecorderBase:
@@ -21,7 +21,7 @@ class MDRecorderBase:
         self.outputDirectory = outputDirectory
         self.timeframes = timeframes
         self.writeNewFiles = writeNewFiles
-        self.requestHandler = requestHandler(maxAPIRequestsPerSec, cooldownPeriodInSec)
+        self.requestHandler = requestHandler(maxAPIRequestsPerSec, 1, cooldownPeriodInSec)
 
     @staticmethod
     def getProductIdFromCoinAndQuoteCurrency(coinName, quoteCurrency):

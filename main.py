@@ -1,3 +1,8 @@
+# Load external modules
+from ext_modules.ext_modules_loader import load_ext_modules
+load_ext_modules()
+
+# Regular imports
 import argparse
 import sys
 
