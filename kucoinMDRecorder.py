@@ -15,24 +15,25 @@ class consts:
 
 
 class kucoinMDRecorder(MDRecorderBase):
-    def __init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName, interestingBaseCurrencies,
-                 interestingQuoteCurrencies, outputDirectory, timeframes, writeNewFiles, maxAPIRequestsPerSec,
-                 cooldownPeriodInSec):
-        MDRecorderBase.__init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
-                                interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory, timeframes,
-                                writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+    def __init__(self, api_url: str, header: list[str], key_date: str, max_candles_per_api_request: int,
+                 exchange_name: str, interesting_base_currencies: list[str], interesting_quote_currencies: list[str],
+                 output_directory: str, timeframes: list[str], write_new_files: bool, max_api_requests_per_sec: int,
+                 cooldown_period_in_sec: int):
+        MDRecorderBase.__init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name,
+                                interesting_base_currencies, interesting_quote_currencies, output_directory, timeframes,
+                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec)
 
-    def getAllInterestingProductIDs(self):
+    def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'api/v2/symbols'
         r = self.requestHandler.get(request_url)
 
-        symbol_info_list = r.json()[consts.KEY_DATA]
-        interesting_product_ids = []
+        symbol_info_list: list[dict[str, str]] = r.json()[consts.KEY_DATA]
+        interesting_product_ids: list[str] = []
         for symbol_info in symbol_info_list:
-            quote_currency = symbol_info[consts.KEY_QUOTECURRENCY]
-            symbol = symbol_info[consts.KEY_BASECURRENCY]
+            quote_currency: str = symbol_info[consts.KEY_QUOTECURRENCY]
+            symbol: str = symbol_info[consts.KEY_BASECURRENCY]
             if self.isInterestingQuoteCurrency(quote_currency) and self.isInterestingBaseCurrency(symbol):
-                product_id = self.getProductIdFromCoinAndQuoteCurrency(symbol, quote_currency)
+                product_id: str = self.getProductIdFromCoinAndQuoteCurrency(symbol, quote_currency)
                 interesting_product_ids.append(product_id)
 
         random.shuffle(interesting_product_ids)
@@ -41,18 +42,18 @@ class kucoinMDRecorder(MDRecorderBase):
             f'{len(interesting_product_ids)}/{len(symbol_info_list)} interesting products found:{product_ids_str}')
         return interesting_product_ids
 
-    def getAllDelistedProductIDs(self, interesting_product_id_list):
+    def getAllDelistedProductIDs(self, interesting_product_id_list: list[str]) -> list[str]:
         request_url = self.api_url + 'api/v2/symbols'
         r = self.requestHandler.get(request_url)
 
-        symbol_info_list = r.json()[consts.KEY_DATA]
-        delisted_product_ids = []
+        symbol_info_list: list[dict[str, str]] = r.json()[consts.KEY_DATA]
+        delisted_product_ids: list[str] = []
         for symbol_info in symbol_info_list:
-            trading_enabled = symbol_info[consts.KEY_TRADING_ENABLED]
+            trading_enabled: str = symbol_info[consts.KEY_TRADING_ENABLED]
             if not trading_enabled:
-                coin = symbol_info[consts.KEY_BASECURRENCY]
-                quote_currency = symbol_info[consts.KEY_QUOTECURRENCY]
-                product_id = self.getProductIdFromCoinAndQuoteCurrency(coin, quote_currency)
+                coin: str = symbol_info[consts.KEY_BASECURRENCY]
+                quote_currency: str = symbol_info[consts.KEY_QUOTECURRENCY]
+                product_id: str = self.getProductIdFromCoinAndQuoteCurrency(coin, quote_currency)
                 if not interesting_product_id_list or product_id in interesting_product_id_list:
                     delisted_product_ids.append(product_id)
 
@@ -60,97 +61,98 @@ class kucoinMDRecorder(MDRecorderBase):
         logging.info(f'{len(delisted_product_ids)} delisted products found: {delisted_product_ids_str}')
         return delisted_product_ids
 
-    def downloadAndWriteData(self, productId, timeframeStr, filename, isDelisted):
-        if not self.validateTimeframeStr(timeframeStr):
-            logging.error(f'Invalid timeframe:{timeframeStr} for ProductID:{productId}. Skipping...')
+    def downloadAndWriteData(self, product_id: str, timeframe: str, filename: str, is_delisted: bool) -> bool:
+        if not self.validateTimeframeStr(timeframe):
+            logging.error(f'Invalid timeframe:{timeframe} for ProductID:{product_id}. Skipping...')
             return False
 
-        candleType = self.getCandleTypeFromTimeframeStr(timeframeStr)
-        granularity = self.getNumSecondsFromTimeframeStr(timeframeStr)
-        minReqStartTime = self.getMinReqStartTime(filename)
-        candles = []
+        candle_type: str = self.getCandleTypeFromTimeframeStr(timeframe)
+        granularity: int = self.getNumSecondsFromTimeframeStr(timeframe)
+        min_req_start_time: int = self.getMinReqStartTime(filename)
+        candles: list[list] = []
         request_url = self.api_url + 'api/v1/market/candles'
-        numEmptyResponses = 0
-        reqEndTime = int(granularity * int(time.time() / granularity + 1))
-        logging.info(f'Starting download of {timeframeStr} candles for {productId} to {filename}.'
-                     f' minReqStartTime:{minReqStartTime}')
-        loop_iteration_number = 0
-        while numEmptyResponses < 3 and reqEndTime >= minReqStartTime:
+        num_empty_responses: int = 0
+        req_end_time: int = int(granularity * int(time.time() / granularity + 1))
+        logging.info(f'Starting download of {timeframe} candles for {product_id} to {filename}.'
+                     f' minReqStartTime:{min_req_start_time}')
+        loop_iteration_number: int = 0
+        while num_empty_responses < 3 and req_end_time >= min_req_start_time:
             loop_iteration_number += 1
-            reqStartTime = reqEndTime - granularity * self.maxCandlesPerAPIRequest
-            reqStartTime = max(minReqStartTime, reqStartTime)
+            req_start_time: int = req_end_time - granularity * self.maxCandlesPerAPIRequest
+            req_start_time = max(min_req_start_time, req_start_time)
 
-            if loop_iteration_number == 1 and minReqStartTime == 0:
-                reqStartTime = 0
-                params = {
-                    'symbol': productId,
-                    'type': candleType
+            if loop_iteration_number == 1 and min_req_start_time == 0:
+                req_start_time = 0
+                params: dict[str, str] = {
+                    'symbol': product_id,
+                    'type': candle_type
                 }
             else:
                 params = {
-                    'symbol': productId,
-                    'type': candleType,
-                    'startAt': str(int(reqStartTime)),
-                    'endAt': str(int(reqEndTime))
+                    'symbol': product_id,
+                    'type': candle_type,
+                    'startAt': str(int(req_start_time)),
+                    'endAt': str(int(req_end_time))
                 }
 
             r = self.requestHandler.get(request_url, params)
-            r_json = r.json()[consts.KEY_DATA]
+            r_json: list[list] = r.json()[consts.KEY_DATA]
 
             if loop_iteration_number == 1 and len(r_json) > 0:
-                if minReqStartTime == 0 or isDelisted:
-                    reqStartTime = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
+                if min_req_start_time == 0 or is_delisted:
+                    req_start_time = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
 
-                if isDelisted and minReqStartTime != 0:
-                    latestCandleStr = ','.join(str(e) for e in r_json[0])
-                    rawLastLine = self.getLastNonBlankLineFromFile(filename)
+                if is_delisted and min_req_start_time != 0:
+                    latest_candle_str: str = ','.join(str(e) for e in r_json[0])
+                    raw_last_line: str = self.getLastNonBlankLineFromFile(filename)
 
                     # also create float arrays in case one of the lines has a number like 1.0 instead of 1 etc
-                    latestCandleFloatArr = [float(x) for x in r_json[0]]
-                    rawLastLineArr = [float(x) for x in rawLastLine.split(',')]
+                    latest_candle_float_arr: list[float] = [float(x) for x in r_json[0]]
+                    raw_last_line_arr: list[float] = [float(x) for x in raw_last_line.split(',')]
 
-                    if latestCandleStr == rawLastLine or latestCandleFloatArr == rawLastLineArr:
+                    if latest_candle_str == raw_last_line or latest_candle_float_arr == raw_last_line_arr:
                         # This code will only be reached if a request is sent on a delisted product
                         # and there is an up to date existing market data file
-                        logging.info(f'Nothing to update for delisted product:{productId}. Skipping file:{filename}')
+                        logging.info(f'Nothing to update for delisted product:{product_id}. Skipping file:{filename}')
                         return True
 
-            reqEndTime = reqStartTime
+            req_end_time = req_start_time
             if len(r_json) == 0:
-                numEmptyResponses += 1
-                logging.info(f'Received blank response. numEmptyResponses:{numEmptyResponses}')
+                num_empty_responses += 1
+                logging.info(f'Received blank response. numEmptyResponses:{num_empty_responses}')
                 # If this was the first request sent to get latest candles then find where the
                 # data for that instrument stopped being broadcast (can happen with delisted instruments)
-                if reqStartTime == 0:
-                    reqEndTime = self.findCloseTimestampOfLatestAvailableData(productId, request_url)
+                if req_start_time == 0:
+                    req_end_time = self.findCloseTimestampOfLatestAvailableData(product_id, request_url)
                 continue
 
             candles += r_json
-            numEmptyResponses = 0
-            earliestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
-            latestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
+            num_empty_responses = 0
+            earliest_timestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
+            latest_timestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
             logging.info(f'URL:{r.url} NumCandlesReceived:{len(r_json)}'
-                         f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp)})'
-                         f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp)})')
+                         f' EarliestTimestamp:{earliest_timestamp} ({datetime.fromtimestamp(earliest_timestamp)})'
+                         f' LatestTimestamp:{latest_timestamp} ({datetime.fromtimestamp(latest_timestamp)})')
 
         return self.writeToCsv(candles[::-1], filename)
 
     @staticmethod
-    def validateTimeframeStr(timeframeStr):
-        valid_timeframes = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '1w']
+    def validateTimeframeStr(timeframe: str) -> bool:
+        valid_timeframes: set[str] = {'1m', '3m', '5m', '15m', '30m', '1h', '2h',
+                                      '4h', '6h', '8h', '12h', '1d', '1w'}
 
-        if timeframeStr not in valid_timeframes:
-            logging.error(f'Unsupported timeframe:{timeframeStr}. Investigate and fix...')
+        if timeframe not in valid_timeframes:
+            logging.error(f'Unsupported timeframe:{timeframe}. Investigate and fix...')
             return False
 
         return True
 
     @staticmethod
-    def getNumSecondsFromTimeframeStr(timeframeStr):
-        if not kucoinMDRecorder.validateTimeframeStr(timeframeStr):
+    def getNumSecondsFromTimeframeStr(timeframe: str) -> int:
+        if not kucoinMDRecorder.validateTimeframeStr(timeframe):
             os._exit(1)
 
-        match timeframeStr:
+        match timeframe:
             case '1m':
                 return 60
             case '3m':
@@ -178,15 +180,15 @@ class kucoinMDRecorder(MDRecorderBase):
             case '1w':
                 return 60 * 60 * 24 * 7
             case _:  # this should never happen because we validate the parameter beforehand
-                logging.error(f'Serious ERROR. Unsupported timeframe:{timeframeStr}. Investigate and fix...')
+                logging.error(f'Serious ERROR. Unsupported timeframe:{timeframe}. Investigate and fix...')
                 os._exit(1)
 
     @staticmethod
-    def getCandleTypeFromTimeframeStr(timeframeStr):
-        if not kucoinMDRecorder.validateTimeframeStr(timeframeStr):
+    def getCandleTypeFromTimeframeStr(timeframe: str) -> str:
+        if not kucoinMDRecorder.validateTimeframeStr(timeframe):
             os._exit(1)
 
-        match timeframeStr:
+        match timeframe:
             case '1m':
                 return '1min'
             case '3m':
@@ -214,57 +216,32 @@ class kucoinMDRecorder(MDRecorderBase):
             case '1w':
                 return '1week'
             case _:  # this should never happen because we validate the parameter beforehand
-                logging.error(f'Serious ERROR. Unsupported timeframe:{timeframeStr}. Investigate and fix...')
+                logging.error(f'Serious ERROR. Unsupported timeframe:{timeframe}. Investigate and fix...')
                 os._exit(1)
 
-    def getMinReqStartTime(self, filename):
-        fileExists = os.path.isfile(filename)
-        if self.writeNewFiles or not fileExists:
+    def getMinReqStartTime(self, filename: str) -> int:
+        file_exists: bool = os.path.isfile(filename)
+        if self.writeNewFiles or not file_exists:
             return 0
 
-        minReqStartTime = self.getLatestTimestampFromFile(filename)
-        logging.debug(f'File:{filename} Exists:{fileExists} minReqStartTime:{minReqStartTime}')
-        return minReqStartTime
+        min_req_start_time = self.getLatestTimestampFromFile(filename)
+        logging.debug(f'File:{filename} Exists:{file_exists} minReqStartTime:{min_req_start_time}')
+        return min_req_start_time
 
-    def findCloseTimestampOfLatestAvailableData(self, productId, request_url):
-        latestDataTimestamp = 0
-        calculatedCloseTimestamp = 0
+    def findCloseTimestampOfLatestAvailableData(self, product_id: str, request_url: str) -> int:
+        latest_data_timestamp: int = 0
+        calculated_close_timestamp: int = 0
 
         params = {
-            'symbol': productId,
+            'symbol': product_id,
             'type': self.getCandleTypeFromTimeframeStr('1d')
         }
         r = self.requestHandler.get(request_url, params)
-        r_json = r.json()[consts.KEY_DATA]
+        r_json: list[list] = r.json()[consts.KEY_DATA]
         logging.debug(f'findCloseTimestampOfLatestAvailableData received data:\n{r_json}')
         if len(r_json) > 0:
-            latestDataTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
-            calculatedCloseTimestamp = latestDataTimestamp + self.getNumSecondsFromTimeframeStr('1d')
-        logging.info(f'findCloseTimestampOfLatestAvailableData returning calculatedCloseTimestamp:{calculatedCloseTimestamp} '
-                     f'for product:{productId} with observed latestDataTimestamp:{latestDataTimestamp}')
-        return calculatedCloseTimestamp
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            latest_data_timestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
+            calculated_close_timestamp = latest_data_timestamp + self.getNumSecondsFromTimeframeStr('1d')
+        logging.info(f'findCloseTimestampOfLatestAvailableData returning calculatedCloseTimestamp:{calculated_close_timestamp} '
+                     f'for product:{product_id} with observed latestDataTimestamp:{latest_data_timestamp}')
+        return calculated_close_timestamp
