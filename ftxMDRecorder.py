@@ -74,15 +74,15 @@ class ftxMDRecorder(MDRecorderBase):
 
     # Note: isDelisted case is not handled in FTX because I couldn't find an existing delisted product to
     # test is with.
-    def downloadAndWriteData(self, productId, timeframeStr, filename, isDelisted):
-        resolution = self.getResolutionFromTimeframeStrInSec(timeframeStr)
+    def downloadAndWriteData(self, product_id, timeframe, filename, is_delisted):
+        resolution = self.getResolutionFromTimeframeStrInSec(timeframe)
         minReqStartTime = self.getMinReqStartTime(filename)
         candles = []
-        request_url = self.api_url + f'markets/{productId.replace("-", "/")}/candles'
+        request_url = self.api_url + f'markets/{product_id.replace("-", "/")}/candles'
         numEmptyResponses = 0
         reqEndTime = int(resolution * int(time.time() / resolution))
         loop_iteration_number = 0
-        logging.info(f'Starting download of {timeframeStr} candles for {productId} to {filename}.'
+        logging.info(f'Starting download of {timeframe} candles for {product_id} to {filename}.'
                      f' minReqStartTime:{minReqStartTime}')
         while numEmptyResponses < 3 and reqEndTime >= minReqStartTime:
             loop_iteration_number += 1

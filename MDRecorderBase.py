@@ -152,8 +152,8 @@ class MDRecorderBase:
     def getAllInterestingProductIDs(self) -> list[str]:
         raise NotImplementedError('ERROR: Method getAllInterestingProductIDs must be defined in child class!')
 
-    def getAllDelistedProductIDs(self, interesting_product_id_list) -> list[str]:
+    def getAllDelistedProductIDs(self, interesting_product_id_list: list[str]) -> list[str]:
         raise NotImplementedError('ERROR: Method getAllDelistedProductIDs must be defined in child class!')
 
-    def downloadAndWriteData(self, productId, timeframeStr, filename, isDelisted) -> bool:
+    def downloadAndWriteData(self, product_id: str, timeframe: str, filename: str, is_delisted: bool) -> bool:
         raise NotImplementedError('ERROR: Method downloadAndWriteData must be defined in child class!')
