@@ -21,13 +21,14 @@ class consts:
 
 
 class binanceFundingRateRecorder(MDRecorderBase):
-    def __init__(self, api_url: str, header: list[str], key_date: str, maxCandlesPerAPIRequest: int, exchangeName: str,
-                 interestingBaseCurrencies: list[str], interestingQuoteCurrencies: list[str], outputDirectory: str,
-                 writeNewFiles: bool, maxAPIRequestsPerSec: int, cooldownPeriodInSec: int):
-        MDRecorderBase.__init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
-                                interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory,
-                                [consts.BINANCE_FUNDINGRATE_TIMEFRAME], writeNewFiles, maxAPIRequestsPerSec,
-                                cooldownPeriodInSec)
+    def __init__(self, api_url: str, header: list[str], key_date: str, max_candles_per_api_request: int,
+                 exchange_name: str, interesting_base_currencies: list[str], interesting_quote_currencies: list[str],
+                 output_directory: str, write_new_files: bool, max_api_requests_per_sec: int,
+                 cooldown_period_in_sec: int):
+        MDRecorderBase.__init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name,
+                                interesting_base_currencies, interesting_quote_currencies, output_directory,
+                                [consts.BINANCE_FUNDINGRATE_TIMEFRAME], write_new_files, max_api_requests_per_sec,
+                                cooldown_period_in_sec)
 
     def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'exchangeInfo'

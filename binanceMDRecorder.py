@@ -17,12 +17,13 @@ class consts:
 
 
 class binanceMDRecorder(MDRecorderBase):
-    def __init__(self, api_url: str, header: list[str], key_date: str, maxCandlesPerAPIRequest: int, exchangeName: str,
-                 interestingBaseCurrencies: list[str], interestingQuoteCurrencies: list[str], outputDirectory: str,
-                 timeframes: list[str], writeNewFiles: bool, maxAPIRequestsPerSec: int, cooldownPeriodInSec: int):
-        MDRecorderBase.__init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
-                                interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory, timeframes,
-                                writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+    def __init__(self, api_url: str, header: list[str], key_date: str, max_candles_per_api_request: int,
+                 exchange_name: str, interesting_base_currencies: list[str], interesting_quote_currencies: list[str],
+                 output_directory: str, timeframes: list[str], write_new_files: bool, max_api_requests_per_sec: int,
+                 cooldown_period_in_sec: int):
+        MDRecorderBase.__init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name,
+                                interesting_base_currencies, interesting_quote_currencies, output_directory, timeframes,
+                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec)
 
     def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'exchangeInfo'
