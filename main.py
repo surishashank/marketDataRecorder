@@ -62,7 +62,6 @@ def main():
     interestingQuoteCurrencies: list[str] = [x.strip() for x in args.interestingQuoteCurrencies.split(',')] if args.interestingQuoteCurrencies else config.getInterestingQuoteCurrencies()
     interestingBaseCurrencies: list[str] = [x.strip() for x in args.interestingBaseCurrencies.split(',')] if args.interestingBaseCurrencies else config.getInterestingCoins()
 
-    timeframes: list[str] = [x.strip() for x in args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
     apiURL: str = args.apiURL if args.apiURL else config.getAPIURL()
     header: list[str] = [x.strip() for x in args.header.split(',')] if args.header else config.getHeaderColumns()
     dateKey: str = args.dateKey if args.dateKey else config.getDateKey()
@@ -76,18 +75,26 @@ def main():
 
     match exchangeName:
         case 'COINBASE':
+            timeframes: list[str] = [x.strip() for x in
+                                     args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
             mdRecorder: MDRecorderBase = coinbaseMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                             interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
                                             timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
         case 'BINANCE':
+            timeframes: list[str] = [x.strip() for x in
+                                     args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
             mdRecorder = binanceMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                            interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
                                            timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
         case 'KUCOIN':
+            timeframes: list[str] = [x.strip() for x in
+                                     args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
             mdRecorder = kucoinMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                           interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
                                           timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
         case 'FTX':
+            timeframes: list[str] = [x.strip() for x in
+                                     args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
             mdRecorder = ftxMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                        interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
                                        timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
