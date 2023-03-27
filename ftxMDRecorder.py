@@ -24,16 +24,16 @@ class consts:
 
 
 class ftxMDRecorder(MDRecorderBase):
-    def __init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName, interestingBaseCurrencies,
-                 interestingQuoteCurrencies, outputDirectory, timeframes, writeNewFiles, maxAPIRequestsPerSec,
-                 cooldownPeriodInSec):
-        MDRecorderBase.__init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
-                                interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory, timeframes,
-                                writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+    def __init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name, interesting_base_currencies,
+                 interesting_quote_currencies, output_directory, timeframes, write_new_files, max_api_requests_per_sec,
+                 cooldown_period_in_sec):
+        MDRecorderBase.__init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name,
+                                interesting_base_currencies, interesting_quote_currencies, output_directory, timeframes,
+                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec)
 
     def getAllInterestingProductIDs(self):
         request_url = self.api_url + 'markets'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         symbol_info_list = r.json()[consts.KEY_DATA]
         interesting_product_ids = []
@@ -55,7 +55,7 @@ class ftxMDRecorder(MDRecorderBase):
 
     def getAllDelistedProductIDs(self, interesting_product_id_list):
         request_url = self.api_url + 'markets'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         symbol_info_list = r.json()[consts.KEY_DATA]
         delisted_product_ids = []
@@ -86,7 +86,7 @@ class ftxMDRecorder(MDRecorderBase):
                      f' minReqStartTime:{minReqStartTime}')
         while numEmptyResponses < 3 and reqEndTime >= minReqStartTime:
             loop_iteration_number += 1
-            reqStartTime = reqEndTime - resolution * (self.maxCandlesPerAPIRequest - 1)
+            reqStartTime = reqEndTime - resolution * (self.max_candles_per_api_request - 1)
             reqStartTime = max(minReqStartTime, reqStartTime)
 
             if loop_iteration_number == 1 and minReqStartTime == 0:
@@ -101,7 +101,7 @@ class ftxMDRecorder(MDRecorderBase):
                     'end_time': str(int(reqEndTime))
                 }
 
-            r = self.requestHandler.get(request_url, params)
+            r = self.request_handler.get(request_url, params)
             r_json = r.json()[consts.KEY_DATA]
 
             if reqStartTime == 0 and len(r_json) > 0:
@@ -148,7 +148,7 @@ class ftxMDRecorder(MDRecorderBase):
 
     def getMinReqStartTime(self, filename):
         fileExists = os.path.isfile(filename)
-        if self.writeNewFiles or not fileExists:
+        if self.write_new_files or not fileExists:
             return 0
 
         minReqStartTime = int(self.getLatestTimestampFromFile(filename) / 1000)

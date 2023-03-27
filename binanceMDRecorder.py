@@ -27,7 +27,7 @@ class binanceMDRecorder(MDRecorderBase):
 
     def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'exchangeInfo'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         interesting_product_ids: list[str] = []
         symbol_info_list: list[dict[str, str]] = r.json()[consts.KEY_SYMBOLS]
@@ -46,7 +46,7 @@ class binanceMDRecorder(MDRecorderBase):
 
     def getAllDelistedProductIDs(self, interesting_product_ids: list[str]) -> list[str]:
         request_url = self.api_url + 'exchangeInfo'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         delisted_product_ids: list[str] = []
         symbol_info_list: list[dict[str, str]] = r.json()[consts.KEY_SYMBOLS]
@@ -82,13 +82,13 @@ class binanceMDRecorder(MDRecorderBase):
                 'interval': timeframe,
                 'startTime': str(int(req_start_time)),
                 # 'endTime': e,
-                'limit': str(int(self.maxCandlesPerAPIRequest))
+                'limit': str(int(self.max_candles_per_api_request))
             }
-            r = self.requestHandler.get(request_url, params)
+            r = self.request_handler.get(request_url, params)
             r_json: list[list] = r.json()
             if len(r_json) == 0:
                 num_empty_responses += 1
-                req_start_time += granularity * self.maxCandlesPerAPIRequest
+                req_start_time += granularity * self.max_candles_per_api_request
                 logging.info(f'Received blank response. numEmptyResponses:{num_empty_responses}')
                 continue
 
@@ -175,7 +175,7 @@ class binanceMDRecorder(MDRecorderBase):
 
     def getReqStartTime(self, filename: str) -> int:
         file_exists = os.path.isfile(filename)
-        if self.writeNewFiles or not file_exists:
+        if self.write_new_files or not file_exists:
             return 0
 
         return self.getLatestTimestampFromFile(filename)

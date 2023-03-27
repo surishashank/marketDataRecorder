@@ -25,7 +25,7 @@ class kucoinMDRecorder(MDRecorderBase):
 
     def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'api/v2/symbols'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         symbol_info_list: list[dict[str, str]] = r.json()[consts.KEY_DATA]
         interesting_product_ids: list[str] = []
@@ -44,7 +44,7 @@ class kucoinMDRecorder(MDRecorderBase):
 
     def getAllDelistedProductIDs(self, interesting_product_id_list: list[str]) -> list[str]:
         request_url = self.api_url + 'api/v2/symbols'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         symbol_info_list: list[dict[str, str]] = r.json()[consts.KEY_DATA]
         delisted_product_ids: list[str] = []
@@ -78,7 +78,7 @@ class kucoinMDRecorder(MDRecorderBase):
         loop_iteration_number: int = 0
         while num_empty_responses < 3 and req_end_time > min_req_start_time:
             loop_iteration_number += 1
-            req_start_time: int = req_end_time - granularity * self.maxCandlesPerAPIRequest
+            req_start_time: int = req_end_time - granularity * self.max_candles_per_api_request
             req_start_time = max(min_req_start_time, req_start_time)
 
             if loop_iteration_number == 1 and min_req_start_time == 0:
@@ -95,7 +95,7 @@ class kucoinMDRecorder(MDRecorderBase):
                     'endAt': str(int(req_end_time))
                 }
 
-            r = self.requestHandler.get(request_url, params)
+            r = self.request_handler.get(request_url, params)
             r_json: list[list] = r.json()[consts.KEY_DATA]
 
             if loop_iteration_number == 1 and len(r_json) > 0:
@@ -221,7 +221,7 @@ class kucoinMDRecorder(MDRecorderBase):
 
     def getMinReqStartTime(self, filename: str) -> int:
         file_exists: bool = os.path.isfile(filename)
-        if self.writeNewFiles or not file_exists:
+        if self.write_new_files or not file_exists:
             return 0
 
         min_req_start_time = self.getLatestTimestampFromFile(filename)
@@ -236,7 +236,7 @@ class kucoinMDRecorder(MDRecorderBase):
             'symbol': product_id,
             'type': self.getCandleTypeFromTimeframeStr('1d')
         }
-        r = self.requestHandler.get(request_url, params)
+        r = self.request_handler.get(request_url, params)
         r_json: list[list] = r.json()[consts.KEY_DATA]
         logging.debug(f'findCloseTimestampOfLatestAvailableData received data:\n{r_json}')
         if len(r_json) > 0:

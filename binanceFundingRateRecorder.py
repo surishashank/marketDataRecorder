@@ -32,7 +32,7 @@ class binanceFundingRateRecorder(MDRecorderBase):
 
     def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'exchangeInfo'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         interesting_product_ids: list[str] = []
         symbol_info_list: list[dict] = r.json()[consts.KEY_SYMBOLS]
@@ -52,7 +52,7 @@ class binanceFundingRateRecorder(MDRecorderBase):
 
     def getAllDelistedProductIDs(self, interesting_product_id_list: list[str]) -> list[str]:
         request_url = self.api_url + 'exchangeInfo'
-        r = self.requestHandler.get(request_url)
+        r = self.request_handler.get(request_url)
 
         delisted_product_ids: list[str] = []
         symbol_info_list: list[dict] = r.json()[consts.KEY_SYMBOLS]
@@ -84,21 +84,21 @@ class binanceFundingRateRecorder(MDRecorderBase):
         loop_iteration_number = 0
         while req_end_time > min_req_start_time:
             loop_iteration_number += 1
-            req_start_time = req_end_time - granularity * self.maxCandlesPerAPIRequest
+            req_start_time = req_end_time - granularity * self.max_candles_per_api_request
             req_start_time = max(min_req_start_time, req_start_time)
 
             params: dict[str, str] = {
                 'symbol': product_id.replace('-', ''),
                 'startTime': str(int(req_start_time)),
                 'endTime': str(int(req_end_time)),
-                'limit': str(int(self.maxCandlesPerAPIRequest))
+                'limit': str(int(self.max_candles_per_api_request))
             }
             if loop_iteration_number == 1 and is_delisted:
                 params = {
                     'symbol': product_id.replace('-', ''),
-                    'limit': str(int(self.maxCandlesPerAPIRequest))
+                    'limit': str(int(self.max_candles_per_api_request))
                 }
-            r = self.requestHandler.get(request_url, params)
+            r = self.request_handler.get(request_url, params)
 
             r_json: list[dict] = r.json()
             if len(r_json) == 0:
@@ -168,7 +168,7 @@ class binanceFundingRateRecorder(MDRecorderBase):
 
     def getMinReqStartTime(self, filename: str) -> int:
         file_exists = os.path.isfile(filename)
-        if self.writeNewFiles or not file_exists:
+        if self.write_new_files or not file_exists:
             return 0
 
         return self.getLatestTimestampFromFile(filename)
