@@ -18,27 +18,28 @@ class consts:
 # https://docs.cloud.coinbase.com/exchange/reference/exchangerestapi_getproductcandles
 # Data output in descending order i.e. oldest date first
 class coinbaseMDRecorder(MDRecorderBase):
-    def __init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName, interestingBaseCurrencies,
-                 interestingQuoteCurrencies, outputDirectory, timeframes, writeNewFiles, maxAPIRequestsPerSec,
-                 cooldownPeriodInSec):
-        MDRecorderBase.__init__(self, api_url, header, key_date, maxCandlesPerAPIRequest, exchangeName,
-                                interestingBaseCurrencies, interestingQuoteCurrencies, outputDirectory, timeframes,
-                                writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+    def __init__(self, api_url: str, header: list[str], key_date: str, max_candles_per_api_request: int,
+                 exchange_name: str, interesting_base_currencies: list[str], interesting_quote_currencies: list[str],
+                 output_directory: str, timeframes: list[str], write_new_files: bool, max_api_requests_per_sec: int,
+                 cooldown_period_in_sec: int):
+        MDRecorderBase.__init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name,
+                                interesting_base_currencies, interesting_quote_currencies, output_directory, timeframes,
+                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec)
 
-    def getAllInterestingProductIDs(self):
+    def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'products'
         r = self.requestHandler.get(request_url)
 
-        interesting_product_ids = []
-        response_list = r.json()
+        interesting_product_ids: list[str] = []
+        response_list: list[dict[str, str]] = r.json()
         for response in response_list:
-            quoteCurrency = response[consts.KEY_QUOTECURRENCY]
-            symbol = response[consts.KEY_BASECURRENCY]
+            quoteCurrency: str = response[consts.KEY_QUOTECURRENCY]
+            symbol: str = response[consts.KEY_BASECURRENCY]
             if self.isInterestingQuoteCurrency(quoteCurrency) and self.isInterestingBaseCurrency(symbol):
                 # Get product_id from response instead of from getProductIdFromCoinAndQuoteCurrency because
                 # coinbase has cases like BTCAUCTION-USD where symbol = BTC & quoteCurrency = USD for both
                 # BTCUSD and BTCAUCTION-USD
-                product_id = response[consts.KEY_PRODUCTID]
+                product_id: str = response[consts.KEY_PRODUCTID]
                 interesting_product_ids.append(product_id)
 
         random.shuffle(interesting_product_ids)
@@ -47,18 +48,18 @@ class coinbaseMDRecorder(MDRecorderBase):
             f'{len(interesting_product_ids)}/{len(response_list)} interesting products found: {product_ids_str}')
         return interesting_product_ids
 
-    def getAllDelistedProductIDs(self, interesting_product_id_list):
+    def getAllDelistedProductIDs(self, interesting_product_id_list: list[str]) -> list[str]:
         request_url = self.api_url + 'products'
         r = self.requestHandler.get(request_url)
-        delisted_product_ids = []
-        response_list = r.json()
+        delisted_product_ids: list[str] = []
+        response_list: list[dict[str, str]] = r.json()
         for response in response_list:
-            trading_status = response[consts.KEY_TRADINGSTATUS]
+            trading_status: str = response[consts.KEY_TRADINGSTATUS]
             if trading_status == consts.KEY_TRADINGSTATUS_DELISTED:
                 # Get product_id from response instead of from getProductIdFromCoinAndQuoteCurrency because
                 # coinbase has cases like BTCAUCTION-USD where symbol = BTC & quoteCurrency = USD for both
                 # BTCUSD and BTCAUCTION-USD
-                product_id = response[consts.KEY_PRODUCTID]
+                product_id: str = response[consts.KEY_PRODUCTID]
                 if not interesting_product_id_list or product_id in interesting_product_id_list:
                     delisted_product_ids.append(product_id)
 
@@ -66,81 +67,81 @@ class coinbaseMDRecorder(MDRecorderBase):
         logging.info(f'{len(delisted_product_ids)} delisted products found: {delisted_product_ids_str}')
         return delisted_product_ids
 
-    def downloadAndWriteData(self, productId, timeframeStr, filename, isDelisted):
-        granularity = self.getGranularityFromTimeframeStr(timeframeStr)
-        minReqStartTime = self.getMinReqStartTime(filename)
-        candles = []
-        numEmptyResponses = 0
-        request_url = self.api_url + f'products/{productId}/candles'
-        reqEndTime = int(granularity * int(time.time() / granularity))
+    def downloadAndWriteData(self, product_id: str, timeframe: str, filename: str, is_delisted: bool) -> bool:
+        granularity: int = self.getGranularityFromTimeframeStr(timeframe)
+        min_req_start_time: int = self.getMinReqStartTime(filename)
+        candles: list[list] = []
+        num_empty_responses: int = 0
+        request_url = self.api_url + f'products/{product_id}/candles'
+        req_end_time: int = int(granularity * int(time.time() / granularity))
 
-        logging.info(f'Starting download of {timeframeStr} candles for {productId} to {filename}.'
-                     f' minReqStartTime:{minReqStartTime}')
-        loop_iteration_number = 0
-        while numEmptyResponses < 3 and reqEndTime >= minReqStartTime:
+        logging.info(f'Starting download of {timeframe} candles for {product_id} to {filename}.'
+                     f' minReqStartTime:{min_req_start_time}')
+        loop_iteration_number: int = 0
+        while num_empty_responses < 3 and req_end_time >= min_req_start_time:
             loop_iteration_number += 1
-            reqStartTime = reqEndTime - granularity * (self.maxCandlesPerAPIRequest - 1)
-            reqStartTime = max(minReqStartTime, reqStartTime)
-            if loop_iteration_number == 1 and (minReqStartTime == 0 or isDelisted):
-                params = {
-                    'granularity': granularity
+            req_start_time: int = req_end_time - granularity * (self.maxCandlesPerAPIRequest - 1)
+            req_start_time = max(min_req_start_time, req_start_time)
+            if loop_iteration_number == 1 and (min_req_start_time == 0 or is_delisted):
+                params: dict[str, str] = {
+                    'granularity': str(int(granularity))
                 }
             else:
                 params = {
                     'granularity': str(int(granularity)),
-                    'start': str(int(reqStartTime)),
-                    'end': str(int(reqEndTime))
+                    'start': str(int(req_start_time)),
+                    'end': str(int(req_end_time))
                 }
 
             r = self.requestHandler.get(request_url, params)
-            r_json = r.json()
+            r_json: list[list] = r.json()
 
             if loop_iteration_number == 1 and len(r_json) > 0:
-                if minReqStartTime == 0 or isDelisted:
-                    reqStartTime = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
+                if min_req_start_time == 0 or is_delisted:
+                    req_start_time = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
 
-                if isDelisted and minReqStartTime != 0:
-                    latestCandleStr = ','.join(str(e) for e in r_json[0])
-                    rawLastLine = self.getLastNonBlankLineFromFile(filename)
+                if is_delisted and min_req_start_time != 0:
+                    latest_candle_str: str = ','.join(str(e) for e in r_json[0])
+                    raw_last_line: str = self.getLastNonBlankLineFromFile(filename)
 
                     # also create float arrays in case one of the lines has a number like 1.0 instead of 1 etc
-                    latestCandleFloatArr = [float(x) for x in r_json[0]]
-                    rawLastLineArr = [float(x) for x in rawLastLine.split(',')]
+                    latest_candle_float_arr: list[float] = [float(x) for x in r_json[0]]
+                    raw_last_line_arr: list[float] = [float(x) for x in raw_last_line.split(',')]
 
-                    if latestCandleStr == rawLastLine or latestCandleFloatArr == rawLastLineArr:
+                    if latest_candle_str == raw_last_line or latest_candle_float_arr == raw_last_line_arr:
                         # This code will only be reached if a request is sent on a delisted product
                         # and there is an up to date existing market data file
-                        logging.info(f'Nothing to update for delisted product:{productId}. Skipping file:{filename}')
+                        logging.info(f'Nothing to update for delisted product:{product_id}. Skipping file:{filename}')
                         return True
 
-            reqEndTime = reqStartTime - granularity
+            req_end_time = req_start_time - granularity
             if len(r_json) == 0:
-                numEmptyResponses += 1
-                logging.info(f'Received empty response. numEmptyResponses:{numEmptyResponses}')
+                num_empty_responses += 1
+                logging.info(f'Received empty response. numEmptyResponses:{num_empty_responses}')
                 continue
 
             candles += r_json
-            numEmptyResponses = 0
-            earliestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
-            latestTimestamp = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
+            num_empty_responses = 0
+            earliest_timestamp: int = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[-1]))
+            latest_timestamp: int = self.getDateTimestampFromLine(','.join(str(x) for x in r_json[0]))
             logging.info(f'URL:{r.url} NumCandlesReceived:{len(r_json)}'
-                         f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp)})'
-                         f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp)})')
+                         f' EarliestTimestamp:{earliest_timestamp} ({datetime.fromtimestamp(earliest_timestamp)})'
+                         f' LatestTimestamp:{latest_timestamp} ({datetime.fromtimestamp(latest_timestamp)})')
 
         return self.writeToCsv(candles[::-1], filename)
 
-    def getMinReqStartTime(self, filename):
-        fileExists = os.path.isfile(filename)
-        if self.writeNewFiles or not fileExists:
+    def getMinReqStartTime(self, filename: str) -> int:
+        file_exists: bool = os.path.isfile(filename)
+        if self.writeNewFiles or not file_exists:
             return 0
 
-        minReqStartTime = self.getLatestTimestampFromFile(filename)
-        logging.debug(f'File:{filename} Exists:{fileExists} minReqStartTime:{minReqStartTime}')
-        return minReqStartTime
+        min_req_start_time: int = self.getLatestTimestampFromFile(filename)
+        logging.debug(f'File:{filename} Exists:{file_exists} minReqStartTime:{min_req_start_time}')
+        return min_req_start_time
 
     @staticmethod
-    def getGranularityFromTimeframeStr(timeframeStr):
-        match timeframeStr:
+    def getGranularityFromTimeframeStr(timeframe: str) -> int:
+        match timeframe:
             case '1m':
                 return 60
             case '5m':
@@ -154,5 +155,5 @@ class coinbaseMDRecorder(MDRecorderBase):
             case '1d':
                 return 86400
             case _:
-                logging.error(f'Unsupported timeframe:{timeframeStr}. Investigate and fix...')
+                logging.error(f'Unsupported timeframe:{timeframe}. Investigate and fix...')
                 os._exit(1)

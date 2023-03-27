@@ -63,7 +63,7 @@ class binanceMDRecorder(MDRecorderBase):
         logging.info(f'{len(delisted_product_ids)} delisted products found: {delisted_product_ids_str}')
         return delisted_product_ids
 
-    def downloadAndWriteData(self, product_id: str, timeframe: str, filename: str, is_delisted: str) -> bool:
+    def downloadAndWriteData(self, product_id: str, timeframe: str, filename: str, is_delisted: bool) -> bool:
         if not self.validateTimeframeStr(timeframe):
             logging.error(f'Invalid timeframe:{timeframe} for ProductID:{product_id}. Skipping...')
             return False
