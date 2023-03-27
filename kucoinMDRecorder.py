@@ -76,7 +76,7 @@ class kucoinMDRecorder(MDRecorderBase):
         logging.info(f'Starting download of {timeframe} candles for {product_id} to {filename}.'
                      f' minReqStartTime:{min_req_start_time}')
         loop_iteration_number: int = 0
-        while num_empty_responses < 3 and req_end_time >= min_req_start_time:
+        while num_empty_responses < 3 and req_end_time > min_req_start_time:
             loop_iteration_number += 1
             req_start_time: int = req_end_time - granularity * self.maxCandlesPerAPIRequest
             req_start_time = max(min_req_start_time, req_start_time)
