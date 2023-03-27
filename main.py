@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from MDRecorderBase import MDRecorderBase
 from binanceFundingRateRecorder import binanceFundingRateRecorder
 from ftxMDRecorder import ftxMDRecorder
 from mdRecorderConfig import mdRecorderConfig
@@ -51,26 +52,26 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    config = mdRecorderConfig(args.config)
+    config: mdRecorderConfig = mdRecorderConfig(args.config)
 
-    interestingQuoteCurrencies = [x.strip() for x in args.interestingQuoteCurrencies.split(',')] if args.interestingQuoteCurrencies else config.getInterestingQuoteCurrencies()
-    interestingBaseCurrencies = [x.strip() for x in args.interestingBaseCurrencies.split(',')] if args.interestingBaseCurrencies else config.getInterestingCoins()
+    interestingQuoteCurrencies: list[str] = [x.strip() for x in args.interestingQuoteCurrencies.split(',')] if args.interestingQuoteCurrencies else config.getInterestingQuoteCurrencies()
+    interestingBaseCurrencies: list[str] = [x.strip() for x in args.interestingBaseCurrencies.split(',')] if args.interestingBaseCurrencies else config.getInterestingCoins()
 
-    timeframes = [x.strip() for x in args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
-    apiURL = args.apiURL if args.apiURL else config.getAPIURL()
-    header = [x.strip() for x in args.header.split(',')] if args.header else config.getHeaderColumns()
-    dateKey = args.dateKey if args.dateKey else config.getDateKey()
-    maxCandlesPerAPIRequest = args.maxCandlesPerAPIRequest if args.maxCandlesPerAPIRequest else config.getMaxCandlesPerAPIRequest()
-    exchangeName = args.exchangeName if args.exchangeName else config.getExchangeName()
-    maxAPIRequestsPerSec = args.maxAPIRequestsPerSec if args.maxAPIRequestsPerSec else config.getMaxNumberOfAPIRequestsPerSecond()
-    cooldownPeriodInSec = args.cooldownPeriodInSec if args.cooldownPeriodInSec else config.getCooldownPeriodInSec()
+    timeframes: list[str] = [x.strip() for x in args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
+    apiURL: str = args.apiURL if args.apiURL else config.getAPIURL()
+    header: list[str] = [x.strip() for x in args.header.split(',')] if args.header else config.getHeaderColumns()
+    dateKey: str = args.dateKey if args.dateKey else config.getDateKey()
+    maxCandlesPerAPIRequest: int = args.maxCandlesPerAPIRequest if args.maxCandlesPerAPIRequest else config.getMaxCandlesPerAPIRequest()
+    exchangeName: str = args.exchangeName if args.exchangeName else config.getExchangeName()
+    maxAPIRequestsPerSec: int = args.maxAPIRequestsPerSec if args.maxAPIRequestsPerSec else config.getMaxNumberOfAPIRequestsPerSecond()
+    cooldownPeriodInSec: int = args.cooldownPeriodInSec if args.cooldownPeriodInSec else config.getCooldownPeriodInSec()
 
-    cmd = ' '.join(sys.argv)
+    cmd: str = ' '.join(sys.argv)
     logging.info(f'Running command: python {cmd}')
 
     match exchangeName:
         case 'COINBASE':
-            mdRecorder = coinbaseMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
+            mdRecorder: MDRecorderBase = coinbaseMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                             interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
                                             timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
         case 'BINANCE':
@@ -94,7 +95,7 @@ def main():
             print(f'Exchange:{exchangeName} not supported. Exiting...')
             quit()
 
-    numThreads = args.numThreads if args.numThreads else 5
+    numThreads: int = args.numThreads if args.numThreads else 5
     mdRecorder.startRecordingProcess(numThreads)
 
 
