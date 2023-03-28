@@ -26,10 +26,10 @@ class consts:
 class ftxMDRecorder(MDRecorderBase):
     def __init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name, interesting_base_currencies,
                  interesting_quote_currencies, output_directory, timeframes, write_new_files, max_api_requests_per_sec,
-                 cooldown_period_in_sec):
+                 cooldown_period_in_sec, use_parquet_files):
         MDRecorderBase.__init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name,
                                 interesting_base_currencies, interesting_quote_currencies, output_directory, timeframes,
-                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec)
+                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec, use_parquet_files)
 
     def getAllInterestingProductIDs(self):
         request_url = self.api_url + 'markets'
@@ -123,7 +123,7 @@ class ftxMDRecorder(MDRecorderBase):
             logging.info(f'NumCandlesReceived:{len(r_json)}'
                          f' EarliestTimestamp:{earliestTimestamp} ({datetime.fromtimestamp(earliestTimestamp / 1000)})'
                          f' LatestTimestamp:{latestTimestamp} ({datetime.fromtimestamp(latestTimestamp / 1000)})')
-        return self.writeToCsv(candles, filename)
+        return self.writeToDisk(candles, filename)
 
     @staticmethod
     def getResolutionFromTimeframeStrInSec(timeframeStr):

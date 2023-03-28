@@ -10,7 +10,7 @@ class MDRecorderBase:
     def __init__(self, api_url: str, header: list[str], key_date: str, max_candles_per_api_request: int,
                  exchange_name: str, interesting_base_currencies: list[str], interesting_quote_currencies: list[str],
                  output_directory: str, timeframes: list[str], write_new_files: bool, max_api_requests_per_sec: int,
-                 cooldown_period_in_sec: int):
+                 cooldown_period_in_sec: int, use_parquet_files: bool):
         self.api_url: str = api_url
         self.header: list[str] = header
         self.key_date: str = key_date
@@ -23,21 +23,23 @@ class MDRecorderBase:
         self.timeframes: list[str] = timeframes
         self.write_new_files: bool = write_new_files
         self.request_handler: requestHandler = requestHandler(max_api_requests_per_sec, 1, cooldown_period_in_sec)
+        self.use_parquet_files: bool = use_parquet_files
 
     @staticmethod
     def getProductIdFromCoinAndQuoteCurrency(coin_name: str, quote_currency: str) -> str:
         return f'{coin_name}-{quote_currency}'
 
     def getFilenameFromProductIdAndTimeframe(self, product_id: str, timeframe: str) -> str:
+        extension = 'parquet' if self.use_parquet_files else 'csv'
         file_name: str = os.path.join(self.output_directory,
-                                      '{}_{}_{}.csv'.format(self.exchange_name, product_id, timeframe))
+                                      f'{self.exchange_name}_{product_id}_{timeframe}.{extension}')
         return file_name
 
     def getLatestTimestampFromFile(self, filename: str) -> int:
         if not os.path.isfile(filename) or os.path.getsize(filename) == 0:
             return 0
 
-        all_candles: pd.DataFrame = pd.read_csv(filename)
+        all_candles: pd.DataFrame = self.readMDFile(filename)
         latest_timestamp: int = all_candles[self.key_date].max()
         if math.isnan(latest_timestamp):
             latest_timestamp = 0
@@ -58,14 +60,20 @@ class MDRecorderBase:
         df: pd.DataFrame = pd.DataFrame([elements_arr], columns=self.header)
         return int(df.at[0, self.key_date])
 
-    def writeToCsv(self, data: list[list], filename: str) -> bool:
+    def readMDFile(self, filename: str, csv_dtypes: dict | None = None) -> pd.DataFrame:
+        if self.use_parquet_files:
+            return pd.read_parquet(filename)
+        else:
+            return pd.read_csv(filename, dtype=csv_dtypes)
+
+    def writeToDisk(self, data: list[list], filename: str) -> bool:
         candles: pd.DataFrame = pd.DataFrame(data, columns=self.header).drop_duplicates(self.key_date)
         if not self.write_new_files and os.path.isfile(filename):
             try:
-                old_candles: pd.DataFrame = pd.read_csv(filename, dtype=candles.dtypes.to_dict())
+                old_candles: pd.DataFrame = self.readMDFile(filename, candles.dtypes.to_dict())
                 candles = pd.merge(candles, old_candles, how='outer').drop_duplicates(self.key_date)
             except Exception as e:
-                old_candles = pd.read_csv(filename)
+                old_candles = self.readMDFile(filename)
                 type1: pd.Series = candles.dtypes
                 type2: pd.Series = old_candles.dtypes
                 logging.exception(f'Caught exception "{e}" while reading/writing file {filename}.\n'
@@ -90,7 +98,11 @@ class MDRecorderBase:
                 return False
 
         candles.sort_values(self.key_date, inplace=True)
-        candles.to_csv(filename, index=False)
+
+        if self.use_parquet_files:
+            candles.to_parquet(filename, index=False)
+        else:
+            candles.to_csv(filename, index=False)
         return True
 
     def startRecordingProcess(self, max_threads: int) -> None:

@@ -20,10 +20,10 @@ class binanceMDRecorder(MDRecorderBase):
     def __init__(self, api_url: str, header: list[str], key_date: str, max_candles_per_api_request: int,
                  exchange_name: str, interesting_base_currencies: list[str], interesting_quote_currencies: list[str],
                  output_directory: str, timeframes: list[str], write_new_files: bool, max_api_requests_per_sec: int,
-                 cooldown_period_in_sec: int):
+                 cooldown_period_in_sec: int, use_parquet_files: bool):
         MDRecorderBase.__init__(self, api_url, header, key_date, max_candles_per_api_request, exchange_name,
                                 interesting_base_currencies, interesting_quote_currencies, output_directory, timeframes,
-                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec)
+                                write_new_files, max_api_requests_per_sec, cooldown_period_in_sec, use_parquet_files)
 
     def getAllInterestingProductIDs(self) -> list[str]:
         request_url = self.api_url + 'exchangeInfo'
@@ -115,7 +115,7 @@ class binanceMDRecorder(MDRecorderBase):
                     return True
 
             req_start_time = latest_timestamp + granularity
-        return self.writeToCsv(candles, filename)
+        return self.writeToDisk(candles, filename)
 
     # Available timeframes:
     # s-> seconds; m -> minutes; h -> hours; d -> days; w -> weeks; M -> months

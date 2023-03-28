@@ -36,6 +36,8 @@ def main():
                               help='Number of threads to run (default = 5)')
     optionalArgs.add_argument('-n', dest='writeNewFiles', action='store_true', required=False,
                               help='Force write new market data files (even if old ones exist)')
+    optionalArgs.add_argument('-z', dest='useParquet', action='store_true', required=False,
+                              help='Write to parquet file (default=csv)')
 
     cfgOverrideArgs.add_argument('-t', dest='timeframes', type=str, required=False, metavar='',
                                  help='Timeframes to download data for (must be set here or in cfg file)')
@@ -77,32 +79,34 @@ def main():
         case 'COINBASE':
             timeframes: list[str] = [x.strip() for x in
                                      args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
-            mdRecorder: MDRecorderBase = coinbaseMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
-                                            interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
-                                            timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+            mdRecorder: MDRecorderBase = coinbaseMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest,
+                                                            exchangeName, interestingBaseCurrencies,
+                                                            interestingQuoteCurrencies, args.outputDirectory,
+                                                            timeframes, args.writeNewFiles, maxAPIRequestsPerSec,
+                                                            cooldownPeriodInSec, args.useParquet)
         case 'BINANCE':
-            timeframes: list[str] = [x.strip() for x in
-                                     args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
+            timeframes = [x.strip() for x in args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
             mdRecorder = binanceMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                            interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
-                                           timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+                                           timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec,
+                                           args.useParquet)
         case 'KUCOIN':
-            timeframes: list[str] = [x.strip() for x in
-                                     args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
+            timeframes = [x.strip() for x in args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
             mdRecorder = kucoinMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                           interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
-                                          timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+                                          timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec,
+                                          args.useParquet)
         case 'FTX':
-            timeframes: list[str] = [x.strip() for x in
-                                     args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
+            timeframes = [x.strip() for x in args.timeframes.split(',')] if args.timeframes else config.getTimeframes()
             mdRecorder = ftxMDRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                        interestingBaseCurrencies, interestingQuoteCurrencies, args.outputDirectory,
-                                       timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec)
+                                       timeframes, args.writeNewFiles, maxAPIRequestsPerSec, cooldownPeriodInSec,
+                                       args.useParquet)
         case 'BINANCEFR':
             mdRecorder = binanceFundingRateRecorder(apiURL, header, dateKey, maxCandlesPerAPIRequest, exchangeName,
                                                     interestingBaseCurrencies, interestingQuoteCurrencies,
                                                     args.outputDirectory, args.writeNewFiles, maxAPIRequestsPerSec,
-                                                    cooldownPeriodInSec)
+                                                    cooldownPeriodInSec, args.useParquet)
         case _:
             print(f'Exchange:{exchangeName} not supported. Exiting...')
             quit()
