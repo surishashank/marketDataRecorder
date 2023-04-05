@@ -1,0 +1,8 @@
+__pycache__/
+temp/
+.idea/
+venv/
+.DS_Store
+mdFiles/
+log/
+helperScript.py
