@@ -19,4 +19,4 @@ def load_ext_modules():
     for directory in module_dirs:
         abs_dir = os.path.abspath(os.path.join(script_dir, directory))
         sys.path.append(abs_dir)
-        print(f'Dir:{directory} abs_dir:{abs_dir}')
+
